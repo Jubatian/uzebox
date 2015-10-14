@@ -203,6 +203,8 @@ public:
 	// RENDERIF_D_WIDTH in debug mode.
 	//
 	virtual void getLine(uint32* dest, auint lno) = 0;
+	virtual void* getFrame(void) = 0;
+	virtual void getPixelFormatString(char* pix_fmt) = 0;
 };
 
 

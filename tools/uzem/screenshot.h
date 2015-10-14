@@ -32,6 +32,7 @@ THE SOFTWARE.
 #ifndef SCREENSHOT_H
 #define SCREENSHOT_H
 
+#include <stdio.h>
 #include "types.h"
 #include "renderif.h"
 
@@ -47,5 +48,6 @@ THE SOFTWARE.
 //
 void screenShot(renderIf* ren);
 
+void writeFrame(renderIf* ren, FILE *fp);
 
 #endif

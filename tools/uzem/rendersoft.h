@@ -71,6 +71,12 @@ public:
 	// See renderif
 	void getLine(uint32* dest, auint lno);
 
+	// See renderIf
+	void* getFrame(void);
+
+	// See renderIf
+	void getPixelFormatString(char* pix_fmt);
+
 private:
 	void destroy();
 

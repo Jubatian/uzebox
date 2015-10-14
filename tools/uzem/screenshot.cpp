@@ -74,3 +74,8 @@ void screenShot(renderIf* ren)
 
 	SDL_FreeSurface(surf);
 }
+
+void writeFrame(renderIf* ren, FILE *fp)
+{
+	fwrite(ren->getFrame(), RENDERIF_N_WIDTH*RENDERIF_N_HEIGHT*4, 1, fp);
+}

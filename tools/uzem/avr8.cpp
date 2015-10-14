@@ -360,6 +360,7 @@ void avr8::write_io_x(u8 addr,u8 value)
 					// Temporarily disabled. The real solution would be moving this off to a seperate module!
 					// The dirty solution would be sending the data line by line to avconv.
 					// if (recordMovie && avconv_video) fwrite(surface->pixels, VIDEO_DISP_WIDTH*224*4, 1, avconv_video);
+		                        if (recordMovie && avconv_video) writeFrame(o_renderer, avconv_video);
 
 					SDL_Event event;
 					while (SDL_PollEvent(&event))
@@ -1896,34 +1897,10 @@ bool avr8::init_gui(renderIf* ren)
 	if (recordMovie){
 
 		if (avconv_video == NULL){
-			// Detect the pixel format that the GPU picked for optimal speed
-			char pix_fmt[] = "aaaa";
-			//
-			// TODO: Temporarily disabled. Needs to be rewritten, see at the line output.
-			// Maybe best would be sending line by line. Maybe the very best would be moving
-			// this entire thing to its own module.
-			//
-			//switch (surface->format->Rmask) {
-			//case 0xff000000: pix_fmt[3] = 'r'; break;
-			//case 0x00ff0000: pix_fmt[2] = 'r'; break;
-			//case 0x0000ff00: pix_fmt[1] = 'r'; break;
-			//case 0x000000ff: pix_fmt[0] = 'r'; break;
-			//}
-			//switch (surface->format->Gmask) {
-			//case 0xff000000: pix_fmt[3] = 'g'; break;
-			//case 0x00ff0000: pix_fmt[2] = 'g'; break;
-			//case 0x0000ff00: pix_fmt[1] = 'g'; break;
-			//case 0x000000ff: pix_fmt[0] = 'g'; break;
-			//}
-			//switch (surface->format->Bmask) {
-			//case 0xff000000: pix_fmt[3] = 'b'; break;
-			//case 0x00ff0000: pix_fmt[2] = 'b'; break;
-			//case 0x0000ff00: pix_fmt[1] = 'b'; break;
-			//case 0x000000ff: pix_fmt[0] = 'b'; break;
-			//}
-			printf("Pixel Format = %s\n", pix_fmt);
 			char avconv_video_cmd[1024] = {0};
-			snprintf(avconv_video_cmd, sizeof(avconv_video_cmd) - 1, "ffmpeg -y -f rawvideo -s %ux224 -pix_fmt %s -r 59.94 -i - -vf scale=960:720 -sws_flags neighbor -an -b:v 1000k uzemtemp.mp4", 618U, pix_fmt);
+                        char pix_fmt[5] = {0};
+                        o_renderer->getPixelFormatString(pix_fmt);
+			snprintf(avconv_video_cmd, sizeof(avconv_video_cmd) - 1, "ffmpeg -y -f rawvideo -s %ux448 -pix_fmt %s -r 59.94 -i - -vf scale=960:720 -sws_flags bilinear -an -preset ultrafast -qp 0 uzemtemp.mp4", 618U, pix_fmt);
 			avconv_video = popen(avconv_video_cmd, "w");
 		}
 		if (avconv_video == NULL){

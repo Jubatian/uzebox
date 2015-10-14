@@ -336,3 +336,33 @@ void renderSoft::getLine(uint32* dest, auint lno)
 		rendersupp_convsurf(dest, o_wsurf, lno, 0U, DISPLAY_WIDTH);
 	}
 }
+
+void* renderSoft::getFrame(void)
+{
+	return o_wsurf->pixels;
+}
+
+void renderSoft::getPixelFormatString(char* pix_fmt)
+{
+	// Detect the pixel format that the GPU picked for optimal speed
+	strcpy(pix_fmt, "aaaa\0");
+
+	switch (o_wsurf->format->Rmask) {
+	case 0xff000000: pix_fmt[3] = 'r'; break;
+	case 0x00ff0000: pix_fmt[2] = 'r'; break;
+	case 0x0000ff00: pix_fmt[1] = 'r'; break;
+	case 0x000000ff: pix_fmt[0] = 'r'; break;
+	}
+	switch (o_wsurf->format->Gmask) {
+	case 0xff000000: pix_fmt[3] = 'g'; break;
+	case 0x00ff0000: pix_fmt[2] = 'g'; break;
+	case 0x0000ff00: pix_fmt[1] = 'g'; break;
+	case 0x000000ff: pix_fmt[0] = 'g'; break;
+	}
+	switch (o_wsurf->format->Bmask) {
+	case 0xff000000: pix_fmt[3] = 'b'; break;
+	case 0x00ff0000: pix_fmt[2] = 'b'; break;
+	case 0x0000ff00: pix_fmt[1] = 'b'; break;
+	case 0x000000ff: pix_fmt[0] = 'b'; break;
+	}
+}
