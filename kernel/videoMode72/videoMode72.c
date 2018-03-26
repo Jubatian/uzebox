@@ -18,11 +18,25 @@
  *  Uzebox is a reserved trade mark
 */
 
-#include <stdbool.h>
 #include <avr/io.h>
-#include <stdlib.h>
 #include <avr/pgmspace.h>
 #include "uzebox.h"
+#if (M40_C64_GRAPHICS != 0)
+#include "../videoMode40/data/c64_graphics.inc"
+#endif
+#if (M40_C64_ALPHA != 0)
+#include "../videoMode40/data/c64_alpha.inc"
+#endif
+#if (M40_C64_MIXED != 0)
+#include "../videoMode40/data/c64_mixed.inc"
+#endif
+#if (M40_IBM_ASCII != 0)
+#include "../videoMode40/data/ibm_ascii.inc"
+#endif
+#if (M40_MATTEL != 0)
+#include "../videoMode40/data/mattel.inc"
+#endif
+
 
 /* Callback invoked by UzeboxCore.Initialize() */
 void InitializeVideoMode(){
@@ -56,7 +70,19 @@ void InitializeVideoMode(){
 	m72_tb_col   = 0xFFU; /* Bottom boundary line: white */
 	m72_lt_col   = 0xFFU; /* T.T boundary line: white */
 	m72_lb_col   = 0xFFU; /* T.B boundary line: white */
-	m72_charrom  = ((unsigned int)(&(M72_DEF_CHARROM[0]))) >> 8;
+#if   (M40_IBM_ASCII != 0)
+	m72_charrom  = ((u16)(m40_ibm_ascii)) >> 8;
+#elif (M40_C64_MIXED != 0)
+	m72_charrom  = ((u16)(m40_c64_mixed)) >> 8;
+#elif (M40_C64_ALPHA != 0)
+	m72_charrom  = ((u16)(m40_c64_alpha)) >> 8;
+#elif (M40_C64_GRAPHICS != 0)
+	m72_charrom  = ((u16)(m40_c64_graphics)) >> 8;
+#elif (M40_MATTEL != 0)
+	m72_charrom  = ((u16)(m40_mattel)) >> 8;
+#else
+	m72_charrom  = ((u16)(&(M72_DEF_CHARROM[0]))) >> 8;
+#endif
 	m72_reset    = 0U;    /* Frame reset disabled */
 #if (M72_USE_XPOS != 0)
 	m72_xpos     = 0U;    /* Game area bg. X position: 0 */

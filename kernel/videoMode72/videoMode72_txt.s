@@ -25,382 +25,399 @@
 
 
 ;
-; Code block macro
+; Code blocks for scanline generation
 ;
-; Register usage:
+; Register allocation:
 ;
-;  r3: r2: Color0:Color0
-;  r5: r4: Color0:Color1
-;  r7: r6: Color1:Color0
-;  r9: r8: Color1:Color1
-;
-; A code block looks like as follows
-;
-;	out   PIXOUT,  r5/r4   ; Pixel 0 of tile
-;	movw  r10,     r2/r4/r6/r8
-;	movw  r12,     r2/r4/r6/r8
-;	movw  r14,     r2/r4/r6/r8
-;	out   PIXOUT,  r5/r4   ; Pixel 1 of tile
-;	rjmp  m72_txt_common
-;
-.macro TXTBLK c0, c1, c2, c3, c4, c5, c6, c7
-.if     ((\c0) == 0)
-	out   PIXOUT,  r5
-.else
-	out   PIXOUT,  r4
-.endif
-.if     (((\c2) == 0) && ((\c3 == 0)))
-	movw  r10,     r2
-.elseif (((\c2) == 0) && ((\c3 != 0)))
-	movw  r10,     r6
-.elseif (((\c2) != 0) && ((\c3 == 0)))
-	movw  r10,     r4
-.else
-	movw  r10,     r8
-.endif
-.if     (((\c4) == 0) && ((\c5 == 0)))
-	movw  r12,     r2
-.elseif (((\c4) == 0) && ((\c5 != 0)))
-	movw  r12,     r6
-.elseif (((\c4) != 0) && ((\c5 == 0)))
-	movw  r12,     r4
-.else
-	movw  r12,     r8
-.endif
-.if     (((\c6) == 0) && ((\c7 == 0)))
-	movw  r14,     r2
-.elseif (((\c6) == 0) && ((\c7 != 0)))
-	movw  r14,     r6
-.elseif (((\c6) != 0) && ((\c7 == 0)))
-	movw  r14,     r4
-.else
-	movw  r14,     r8
-.endif
-.if     ((\c1) == 0)
-	out   PIXOUT,  r5
-.else
-	out   PIXOUT,  r4
-.endif
-	rjmp  m72_txt_common
-.endm
-
-
-
-;
-; 3Kbytes Code block table (unaligned)
-;
-m72_txt_cblock:
-	TXTBLK 0,0,0,0,0,0,0,0
-	TXTBLK 0,0,0,0,0,0,0,1
-	TXTBLK 0,0,0,0,0,0,1,0
-	TXTBLK 0,0,0,0,0,0,1,1
-	TXTBLK 0,0,0,0,0,1,0,0
-	TXTBLK 0,0,0,0,0,1,0,1
-	TXTBLK 0,0,0,0,0,1,1,0
-	TXTBLK 0,0,0,0,0,1,1,1
-	TXTBLK 0,0,0,0,1,0,0,0
-	TXTBLK 0,0,0,0,1,0,0,1
-	TXTBLK 0,0,0,0,1,0,1,0
-	TXTBLK 0,0,0,0,1,0,1,1
-	TXTBLK 0,0,0,0,1,1,0,0
-	TXTBLK 0,0,0,0,1,1,0,1
-	TXTBLK 0,0,0,0,1,1,1,0
-	TXTBLK 0,0,0,0,1,1,1,1
-	TXTBLK 0,0,0,1,0,0,0,0
-	TXTBLK 0,0,0,1,0,0,0,1
-	TXTBLK 0,0,0,1,0,0,1,0
-	TXTBLK 0,0,0,1,0,0,1,1
-	TXTBLK 0,0,0,1,0,1,0,0
-	TXTBLK 0,0,0,1,0,1,0,1
-	TXTBLK 0,0,0,1,0,1,1,0
-	TXTBLK 0,0,0,1,0,1,1,1
-	TXTBLK 0,0,0,1,1,0,0,0
-	TXTBLK 0,0,0,1,1,0,0,1
-	TXTBLK 0,0,0,1,1,0,1,0
-	TXTBLK 0,0,0,1,1,0,1,1
-	TXTBLK 0,0,0,1,1,1,0,0
-	TXTBLK 0,0,0,1,1,1,0,1
-	TXTBLK 0,0,0,1,1,1,1,0
-	TXTBLK 0,0,0,1,1,1,1,1
-	TXTBLK 0,0,1,0,0,0,0,0
-	TXTBLK 0,0,1,0,0,0,0,1
-	TXTBLK 0,0,1,0,0,0,1,0
-	TXTBLK 0,0,1,0,0,0,1,1
-	TXTBLK 0,0,1,0,0,1,0,0
-	TXTBLK 0,0,1,0,0,1,0,1
-	TXTBLK 0,0,1,0,0,1,1,0
-	TXTBLK 0,0,1,0,0,1,1,1
-	TXTBLK 0,0,1,0,1,0,0,0
-	TXTBLK 0,0,1,0,1,0,0,1
-	TXTBLK 0,0,1,0,1,0,1,0
-	TXTBLK 0,0,1,0,1,0,1,1
-	TXTBLK 0,0,1,0,1,1,0,0
-	TXTBLK 0,0,1,0,1,1,0,1
-	TXTBLK 0,0,1,0,1,1,1,0
-	TXTBLK 0,0,1,0,1,1,1,1
-	TXTBLK 0,0,1,1,0,0,0,0
-	TXTBLK 0,0,1,1,0,0,0,1
-	TXTBLK 0,0,1,1,0,0,1,0
-	TXTBLK 0,0,1,1,0,0,1,1
-	TXTBLK 0,0,1,1,0,1,0,0
-	TXTBLK 0,0,1,1,0,1,0,1
-	TXTBLK 0,0,1,1,0,1,1,0
-	TXTBLK 0,0,1,1,0,1,1,1
-	TXTBLK 0,0,1,1,1,0,0,0
-	TXTBLK 0,0,1,1,1,0,0,1
-	TXTBLK 0,0,1,1,1,0,1,0
-	TXTBLK 0,0,1,1,1,0,1,1
-	TXTBLK 0,0,1,1,1,1,0,0
-	TXTBLK 0,0,1,1,1,1,0,1
-	TXTBLK 0,0,1,1,1,1,1,0
-	TXTBLK 0,0,1,1,1,1,1,1
-	TXTBLK 0,1,0,0,0,0,0,0
-	TXTBLK 0,1,0,0,0,0,0,1
-	TXTBLK 0,1,0,0,0,0,1,0
-	TXTBLK 0,1,0,0,0,0,1,1
-	TXTBLK 0,1,0,0,0,1,0,0
-	TXTBLK 0,1,0,0,0,1,0,1
-	TXTBLK 0,1,0,0,0,1,1,0
-	TXTBLK 0,1,0,0,0,1,1,1
-	TXTBLK 0,1,0,0,1,0,0,0
-	TXTBLK 0,1,0,0,1,0,0,1
-	TXTBLK 0,1,0,0,1,0,1,0
-	TXTBLK 0,1,0,0,1,0,1,1
-	TXTBLK 0,1,0,0,1,1,0,0
-	TXTBLK 0,1,0,0,1,1,0,1
-	TXTBLK 0,1,0,0,1,1,1,0
-	TXTBLK 0,1,0,0,1,1,1,1
-	TXTBLK 0,1,0,1,0,0,0,0
-	TXTBLK 0,1,0,1,0,0,0,1
-	TXTBLK 0,1,0,1,0,0,1,0
-	TXTBLK 0,1,0,1,0,0,1,1
-	TXTBLK 0,1,0,1,0,1,0,0
-	TXTBLK 0,1,0,1,0,1,0,1
-	TXTBLK 0,1,0,1,0,1,1,0
-	TXTBLK 0,1,0,1,0,1,1,1
-	TXTBLK 0,1,0,1,1,0,0,0
-	TXTBLK 0,1,0,1,1,0,0,1
-	TXTBLK 0,1,0,1,1,0,1,0
-	TXTBLK 0,1,0,1,1,0,1,1
-	TXTBLK 0,1,0,1,1,1,0,0
-	TXTBLK 0,1,0,1,1,1,0,1
-	TXTBLK 0,1,0,1,1,1,1,0
-	TXTBLK 0,1,0,1,1,1,1,1
-	TXTBLK 0,1,1,0,0,0,0,0
-	TXTBLK 0,1,1,0,0,0,0,1
-	TXTBLK 0,1,1,0,0,0,1,0
-	TXTBLK 0,1,1,0,0,0,1,1
-	TXTBLK 0,1,1,0,0,1,0,0
-	TXTBLK 0,1,1,0,0,1,0,1
-	TXTBLK 0,1,1,0,0,1,1,0
-	TXTBLK 0,1,1,0,0,1,1,1
-	TXTBLK 0,1,1,0,1,0,0,0
-	TXTBLK 0,1,1,0,1,0,0,1
-	TXTBLK 0,1,1,0,1,0,1,0
-	TXTBLK 0,1,1,0,1,0,1,1
-	TXTBLK 0,1,1,0,1,1,0,0
-	TXTBLK 0,1,1,0,1,1,0,1
-	TXTBLK 0,1,1,0,1,1,1,0
-	TXTBLK 0,1,1,0,1,1,1,1
-	TXTBLK 0,1,1,1,0,0,0,0
-	TXTBLK 0,1,1,1,0,0,0,1
-	TXTBLK 0,1,1,1,0,0,1,0
-	TXTBLK 0,1,1,1,0,0,1,1
-	TXTBLK 0,1,1,1,0,1,0,0
-	TXTBLK 0,1,1,1,0,1,0,1
-	TXTBLK 0,1,1,1,0,1,1,0
-	TXTBLK 0,1,1,1,0,1,1,1
-	TXTBLK 0,1,1,1,1,0,0,0
-	TXTBLK 0,1,1,1,1,0,0,1
-	TXTBLK 0,1,1,1,1,0,1,0
-	TXTBLK 0,1,1,1,1,0,1,1
-	TXTBLK 0,1,1,1,1,1,0,0
-	TXTBLK 0,1,1,1,1,1,0,1
-	TXTBLK 0,1,1,1,1,1,1,0
-	TXTBLK 0,1,1,1,1,1,1,1
-	TXTBLK 1,0,0,0,0,0,0,0
-	TXTBLK 1,0,0,0,0,0,0,1
-	TXTBLK 1,0,0,0,0,0,1,0
-	TXTBLK 1,0,0,0,0,0,1,1
-	TXTBLK 1,0,0,0,0,1,0,0
-	TXTBLK 1,0,0,0,0,1,0,1
-	TXTBLK 1,0,0,0,0,1,1,0
-	TXTBLK 1,0,0,0,0,1,1,1
-	TXTBLK 1,0,0,0,1,0,0,0
-	TXTBLK 1,0,0,0,1,0,0,1
-	TXTBLK 1,0,0,0,1,0,1,0
-	TXTBLK 1,0,0,0,1,0,1,1
-	TXTBLK 1,0,0,0,1,1,0,0
-	TXTBLK 1,0,0,0,1,1,0,1
-	TXTBLK 1,0,0,0,1,1,1,0
-	TXTBLK 1,0,0,0,1,1,1,1
-	TXTBLK 1,0,0,1,0,0,0,0
-	TXTBLK 1,0,0,1,0,0,0,1
-	TXTBLK 1,0,0,1,0,0,1,0
-	TXTBLK 1,0,0,1,0,0,1,1
-	TXTBLK 1,0,0,1,0,1,0,0
-	TXTBLK 1,0,0,1,0,1,0,1
-	TXTBLK 1,0,0,1,0,1,1,0
-	TXTBLK 1,0,0,1,0,1,1,1
-	TXTBLK 1,0,0,1,1,0,0,0
-	TXTBLK 1,0,0,1,1,0,0,1
-	TXTBLK 1,0,0,1,1,0,1,0
-	TXTBLK 1,0,0,1,1,0,1,1
-	TXTBLK 1,0,0,1,1,1,0,0
-	TXTBLK 1,0,0,1,1,1,0,1
-	TXTBLK 1,0,0,1,1,1,1,0
-	TXTBLK 1,0,0,1,1,1,1,1
-	TXTBLK 1,0,1,0,0,0,0,0
-	TXTBLK 1,0,1,0,0,0,0,1
-	TXTBLK 1,0,1,0,0,0,1,0
-	TXTBLK 1,0,1,0,0,0,1,1
-	TXTBLK 1,0,1,0,0,1,0,0
-	TXTBLK 1,0,1,0,0,1,0,1
-	TXTBLK 1,0,1,0,0,1,1,0
-	TXTBLK 1,0,1,0,0,1,1,1
-	TXTBLK 1,0,1,0,1,0,0,0
-	TXTBLK 1,0,1,0,1,0,0,1
-	TXTBLK 1,0,1,0,1,0,1,0
-	TXTBLK 1,0,1,0,1,0,1,1
-	TXTBLK 1,0,1,0,1,1,0,0
-	TXTBLK 1,0,1,0,1,1,0,1
-	TXTBLK 1,0,1,0,1,1,1,0
-	TXTBLK 1,0,1,0,1,1,1,1
-	TXTBLK 1,0,1,1,0,0,0,0
-	TXTBLK 1,0,1,1,0,0,0,1
-	TXTBLK 1,0,1,1,0,0,1,0
-	TXTBLK 1,0,1,1,0,0,1,1
-	TXTBLK 1,0,1,1,0,1,0,0
-	TXTBLK 1,0,1,1,0,1,0,1
-	TXTBLK 1,0,1,1,0,1,1,0
-	TXTBLK 1,0,1,1,0,1,1,1
-	TXTBLK 1,0,1,1,1,0,0,0
-	TXTBLK 1,0,1,1,1,0,0,1
-	TXTBLK 1,0,1,1,1,0,1,0
-	TXTBLK 1,0,1,1,1,0,1,1
-	TXTBLK 1,0,1,1,1,1,0,0
-	TXTBLK 1,0,1,1,1,1,0,1
-	TXTBLK 1,0,1,1,1,1,1,0
-	TXTBLK 1,0,1,1,1,1,1,1
-	TXTBLK 1,1,0,0,0,0,0,0
-	TXTBLK 1,1,0,0,0,0,0,1
-	TXTBLK 1,1,0,0,0,0,1,0
-	TXTBLK 1,1,0,0,0,0,1,1
-	TXTBLK 1,1,0,0,0,1,0,0
-	TXTBLK 1,1,0,0,0,1,0,1
-	TXTBLK 1,1,0,0,0,1,1,0
-	TXTBLK 1,1,0,0,0,1,1,1
-	TXTBLK 1,1,0,0,1,0,0,0
-	TXTBLK 1,1,0,0,1,0,0,1
-	TXTBLK 1,1,0,0,1,0,1,0
-	TXTBLK 1,1,0,0,1,0,1,1
-	TXTBLK 1,1,0,0,1,1,0,0
-	TXTBLK 1,1,0,0,1,1,0,1
-	TXTBLK 1,1,0,0,1,1,1,0
-	TXTBLK 1,1,0,0,1,1,1,1
-	TXTBLK 1,1,0,1,0,0,0,0
-	TXTBLK 1,1,0,1,0,0,0,1
-	TXTBLK 1,1,0,1,0,0,1,0
-	TXTBLK 1,1,0,1,0,0,1,1
-	TXTBLK 1,1,0,1,0,1,0,0
-	TXTBLK 1,1,0,1,0,1,0,1
-	TXTBLK 1,1,0,1,0,1,1,0
-	TXTBLK 1,1,0,1,0,1,1,1
-	TXTBLK 1,1,0,1,1,0,0,0
-	TXTBLK 1,1,0,1,1,0,0,1
-	TXTBLK 1,1,0,1,1,0,1,0
-	TXTBLK 1,1,0,1,1,0,1,1
-	TXTBLK 1,1,0,1,1,1,0,0
-	TXTBLK 1,1,0,1,1,1,0,1
-	TXTBLK 1,1,0,1,1,1,1,0
-	TXTBLK 1,1,0,1,1,1,1,1
-	TXTBLK 1,1,1,0,0,0,0,0
-	TXTBLK 1,1,1,0,0,0,0,1
-	TXTBLK 1,1,1,0,0,0,1,0
-	TXTBLK 1,1,1,0,0,0,1,1
-	TXTBLK 1,1,1,0,0,1,0,0
-	TXTBLK 1,1,1,0,0,1,0,1
-	TXTBLK 1,1,1,0,0,1,1,0
-	TXTBLK 1,1,1,0,0,1,1,1
-	TXTBLK 1,1,1,0,1,0,0,0
-	TXTBLK 1,1,1,0,1,0,0,1
-	TXTBLK 1,1,1,0,1,0,1,0
-	TXTBLK 1,1,1,0,1,0,1,1
-	TXTBLK 1,1,1,0,1,1,0,0
-	TXTBLK 1,1,1,0,1,1,0,1
-	TXTBLK 1,1,1,0,1,1,1,0
-	TXTBLK 1,1,1,0,1,1,1,1
-	TXTBLK 1,1,1,1,0,0,0,0
-	TXTBLK 1,1,1,1,0,0,0,1
-	TXTBLK 1,1,1,1,0,0,1,0
-	TXTBLK 1,1,1,1,0,0,1,1
-	TXTBLK 1,1,1,1,0,1,0,0
-	TXTBLK 1,1,1,1,0,1,0,1
-	TXTBLK 1,1,1,1,0,1,1,0
-	TXTBLK 1,1,1,1,0,1,1,1
-	TXTBLK 1,1,1,1,1,0,0,0
-	TXTBLK 1,1,1,1,1,0,0,1
-	TXTBLK 1,1,1,1,1,0,1,0
-	TXTBLK 1,1,1,1,1,0,1,1
-	TXTBLK 1,1,1,1,1,1,0,0
-	TXTBLK 1,1,1,1,1,1,0,1
-	TXTBLK 1,1,1,1,1,1,1,0
-	TXTBLK 1,1,1,1,1,1,1,1
-
-
-
-;
-; Common processing code
-;
-;  r0: r1: Temp
-;  r2- r9: Filled with colors as described at the code block macro
-; r10-r15: Temp (colors to out)
+;  r1: r0: Temp (multiplication)
+; r11:r10: FG:BG colors
 ;     r17: Border color
-;     r19: Row counter (only to be incremented upon return)
-;     r20: Tile counter
-;     r22: Preloaded with 6 (code block size in words)
-;     r23: Tile row select in ROM
-;       Y: VRAM pointer
+;     r19: Row counter
+;     r22: 4 (Size of AT_HEAD blocks in words)
+;     r23: ROM row select for character images
+;       X: Count of tiles (just to have sbiw saving a word)
+;       Y: VRAM
 ;       Z: Temp
 ;
-; Enter in cycle 447 with r10-r15 set to border color (r17), r20 set to 40.
-;
-m72_txt_common:
-	out   PIXOUT,  r10     ; Pixel 2 of tile
-	dec   r20              ; Remaining tiles
-	breq  txt_exit
-txt_entry:
-	mov   ZH,      r23     ; Tile row to use
-	out   PIXOUT,  r11     ; Pixel 3 of tile
+.macro AT_HEAD px0, px1, midl
+	out   PIXOUT,  \px0    ; bit0: Px0
 	ld    ZL,      Y+
-	out   PIXOUT,  r12     ; Pixel 4 of tile
-	lpm   r0,      Z       ; Tile row pixel data
-	out   PIXOUT,  r13     ; Pixel 5 of tile
-	mul   r0,      r22     ; r22 = 6, size of code blocks (words)
-	out   PIXOUT,  r14     ; Pixel 6 of tile
+	out   PIXOUT,  \px1    ; bit1: Px1
+	rjmp  \midl
+.endm
+.macro AT_MIDL px2, px3, px4, tail
+	mov   ZH,      r23     ; r23: Row select
+	out   PIXOUT,  \px2    ; bit2: Px2
+	sbiw  XL,      1       ; X: Tilecount
+	out   PIXOUT,  \px3    ; bit3: Px3
+	lpm   r0,      Z
+	out   PIXOUT,  \px4    ; bit4: Px4
+	rjmp  \tail
+.endm
+.macro AT_TAIL px5, px6, px7, endc
+	out   PIXOUT,  \px5    ; bit5: Px5
+	breq  \endc
+	mul   r0,      r22     ; r22: 4 (size of AT_HEAD blocks in words)
+	out   PIXOUT,  \px6    ; bit6: Px6
 	movw  ZL,      r0
-	subi  ZL,      lo8(-(pm(m72_txt_cblock)))
-	sbci  ZH,      hi8(-(pm(m72_txt_cblock)))
-	out   PIXOUT,  r15     ; Pixel 7 of tile
+	subi  ZL,      lo8(-(pm(at_b)))
+	out   PIXOUT,  \px7    ; bit7: Px7
+	sbci  ZH,      hi8(-(pm(at_b)))
 	ijmp
-txt_exit:
-	out   PIXOUT,  r11     ; Pixel 3 of tile
-	rjmp  .
-	out   PIXOUT,  r12     ; Pixel 4 of tile
-	lpm   r0,      Z       ; Dummy load (nop)
-	out   PIXOUT,  r13     ; Pixel 5 of tile
-	rjmp  .
-	out   PIXOUT,  r14     ; Pixel 6 of tile
-	lpm   r0,      Z       ; Dummy load (nop)
-	out   PIXOUT,  r15     ; Pixel 7 of tile
+.endm
+.macro AT_ENDC px6, px7
+	nop
+	out   PIXOUT,  \px6    ; bit6: Px6
+	sbiw  YL,      1       ; Back extra load
+	out   PIXOUT,  \px7    ; bit7: Px7
+	rjmp  at_exit
+.endm
+at_exit:
+	out   PIXOUT,  r17     ; (1586) Colored border begins
 	inc   r19              ; Row counter increment
 	andi  r19,     0x07
-	out   PIXOUT,  r17     ; (1586) Colored border begins
-	brne  .+2
-	rjmp  .
-	breq  .+2
+	breq  .+4
 	sbiw  YL,      40      ; (1591) Only increment VRAM if at end of tile row
 	ret                    ; (1595)
+	nop
+	ret                    ; (1595)
+
+
+
+at_t0:	AT_TAIL r10, r10, r10, at_e0
+at_t2:	AT_TAIL r11, r10, r10, at_e0
+at_e0:	AT_ENDC      r10, r10
+at_t4:	AT_TAIL r10, r11, r10, at_e4
+at_t6:	AT_TAIL r11, r11, r10, at_e4
+at_e4:	AT_ENDC      r11, r10
+at_t8:	AT_TAIL r10, r10, r11, at_e8
+at_tA:	AT_TAIL r11, r10, r11, at_e8
+at_e8:	AT_ENDC      r10, r11
+at_tC:	AT_TAIL r10, r11, r11, at_eC
+at_tE:	AT_TAIL r11, r11, r11, at_eC
+at_eC:	AT_ENDC      r11, r11
+
+at_m00:	AT_MIDL r10, r10, r10, at_t0
+at_m04:	AT_MIDL r11, r10, r10, at_t0
+at_m08:	AT_MIDL r10, r11, r10, at_t0
+at_m0C:	AT_MIDL r11, r11, r10, at_t0
+at_m10:	AT_MIDL r10, r10, r11, at_t0
+at_m14:	AT_MIDL r11, r10, r11, at_t0
+at_m18:	AT_MIDL r10, r11, r11, at_t0
+at_m1C:	AT_MIDL r11, r11, r11, at_t0
+at_m20:	AT_MIDL r10, r10, r10, at_t2
+at_m24:	AT_MIDL r11, r10, r10, at_t2
+at_m28:	AT_MIDL r10, r11, r10, at_t2
+at_m2C:	AT_MIDL r11, r11, r10, at_t2
+at_m30:	AT_MIDL r10, r10, r11, at_t2
+at_m34:	AT_MIDL r11, r10, r11, at_t2
+at_m38:	AT_MIDL r10, r11, r11, at_t2
+at_m3C:	AT_MIDL r11, r11, r11, at_t2
+at_m40:	AT_MIDL r10, r10, r10, at_t4
+at_m44:	AT_MIDL r11, r10, r10, at_t4
+at_m48:	AT_MIDL r10, r11, r10, at_t4
+at_m4C:	AT_MIDL r11, r11, r10, at_t4
+at_m50:	AT_MIDL r10, r10, r11, at_t4
+at_m54:	AT_MIDL r11, r10, r11, at_t4
+at_m58:	AT_MIDL r10, r11, r11, at_t4
+at_m5C:	AT_MIDL r11, r11, r11, at_t4
+at_m60:	AT_MIDL r10, r10, r10, at_t6
+at_m64:	AT_MIDL r11, r10, r10, at_t6
+at_m68:	AT_MIDL r10, r11, r10, at_t6
+at_m6C:	AT_MIDL r11, r11, r10, at_t6
+at_m70:	AT_MIDL r10, r10, r11, at_t6
+at_m74:	AT_MIDL r11, r10, r11, at_t6
+at_m78:	AT_MIDL r10, r11, r11, at_t6
+at_m7C:	AT_MIDL r11, r11, r11, at_t6
+at_m80:	AT_MIDL r10, r10, r10, at_t8
+at_m84:	AT_MIDL r11, r10, r10, at_t8
+at_m88:	AT_MIDL r10, r11, r10, at_t8
+at_m8C:	AT_MIDL r11, r11, r10, at_t8
+at_m90:	AT_MIDL r10, r10, r11, at_t8
+at_m94:	AT_MIDL r11, r10, r11, at_t8
+at_m98:	AT_MIDL r10, r11, r11, at_t8
+at_m9C:	AT_MIDL r11, r11, r11, at_t8
+at_mA0:	AT_MIDL r10, r10, r10, at_tA
+at_mA4:	AT_MIDL r11, r10, r10, at_tA
+at_mA8:	AT_MIDL r10, r11, r10, at_tA
+at_mAC:	AT_MIDL r11, r11, r10, at_tA
+at_mB0:	AT_MIDL r10, r10, r11, at_tA
+at_mB4:	AT_MIDL r11, r10, r11, at_tA
+at_mB8:	AT_MIDL r10, r11, r11, at_tA
+at_mBC:	AT_MIDL r11, r11, r11, at_tA
+at_mC0:	AT_MIDL r10, r10, r10, at_tC
+at_mC4:	AT_MIDL r11, r10, r10, at_tC
+at_mC8:	AT_MIDL r10, r11, r10, at_tC
+at_mCC:	AT_MIDL r11, r11, r10, at_tC
+at_mD0:	AT_MIDL r10, r10, r11, at_tC
+at_mD4:	AT_MIDL r11, r10, r11, at_tC
+at_mD8:	AT_MIDL r10, r11, r11, at_tC
+at_mDC:	AT_MIDL r11, r11, r11, at_tC
+at_mE0:	AT_MIDL r10, r10, r10, at_tE
+at_mE4:	AT_MIDL r11, r10, r10, at_tE
+at_mE8:	AT_MIDL r10, r11, r10, at_tE
+at_mEC:	AT_MIDL r11, r11, r10, at_tE
+at_mF0:	AT_MIDL r10, r10, r11, at_tE
+at_mF4:	AT_MIDL r11, r10, r11, at_tE
+at_mF8:	AT_MIDL r10, r11, r11, at_tE
+at_mFC:	AT_MIDL r11, r11, r11, at_tE
+
+at_b:	AT_HEAD r10, r10, at_m00
+	AT_HEAD r11, r10, at_m00
+	AT_HEAD r10, r11, at_m00
+	AT_HEAD r11, r11, at_m00
+	AT_HEAD r10, r10, at_m04
+	AT_HEAD r11, r10, at_m04
+	AT_HEAD r10, r11, at_m04
+	AT_HEAD r11, r11, at_m04
+	AT_HEAD r10, r10, at_m08
+	AT_HEAD r11, r10, at_m08
+	AT_HEAD r10, r11, at_m08
+	AT_HEAD r11, r11, at_m08
+	AT_HEAD r10, r10, at_m0C
+	AT_HEAD r11, r10, at_m0C
+	AT_HEAD r10, r11, at_m0C
+	AT_HEAD r11, r11, at_m0C
+	AT_HEAD r10, r10, at_m10
+	AT_HEAD r11, r10, at_m10
+	AT_HEAD r10, r11, at_m10
+	AT_HEAD r11, r11, at_m10
+	AT_HEAD r10, r10, at_m14
+	AT_HEAD r11, r10, at_m14
+	AT_HEAD r10, r11, at_m14
+	AT_HEAD r11, r11, at_m14
+	AT_HEAD r10, r10, at_m18
+	AT_HEAD r11, r10, at_m18
+	AT_HEAD r10, r11, at_m18
+	AT_HEAD r11, r11, at_m18
+	AT_HEAD r10, r10, at_m1C
+	AT_HEAD r11, r10, at_m1C
+	AT_HEAD r10, r11, at_m1C
+	AT_HEAD r11, r11, at_m1C
+	AT_HEAD r10, r10, at_m20
+	AT_HEAD r11, r10, at_m20
+	AT_HEAD r10, r11, at_m20
+	AT_HEAD r11, r11, at_m20
+	AT_HEAD r10, r10, at_m24
+	AT_HEAD r11, r10, at_m24
+	AT_HEAD r10, r11, at_m24
+	AT_HEAD r11, r11, at_m24
+	AT_HEAD r10, r10, at_m28
+	AT_HEAD r11, r10, at_m28
+	AT_HEAD r10, r11, at_m28
+	AT_HEAD r11, r11, at_m28
+	AT_HEAD r10, r10, at_m2C
+	AT_HEAD r11, r10, at_m2C
+	AT_HEAD r10, r11, at_m2C
+	AT_HEAD r11, r11, at_m2C
+	AT_HEAD r10, r10, at_m30
+	AT_HEAD r11, r10, at_m30
+	AT_HEAD r10, r11, at_m30
+	AT_HEAD r11, r11, at_m30
+	AT_HEAD r10, r10, at_m34
+	AT_HEAD r11, r10, at_m34
+	AT_HEAD r10, r11, at_m34
+	AT_HEAD r11, r11, at_m34
+	AT_HEAD r10, r10, at_m38
+	AT_HEAD r11, r10, at_m38
+	AT_HEAD r10, r11, at_m38
+	AT_HEAD r11, r11, at_m38
+	AT_HEAD r10, r10, at_m3C
+	AT_HEAD r11, r10, at_m3C
+	AT_HEAD r10, r11, at_m3C
+	AT_HEAD r11, r11, at_m3C
+	AT_HEAD r10, r10, at_m40
+	AT_HEAD r11, r10, at_m40
+	AT_HEAD r10, r11, at_m40
+	AT_HEAD r11, r11, at_m40
+	AT_HEAD r10, r10, at_m44
+	AT_HEAD r11, r10, at_m44
+	AT_HEAD r10, r11, at_m44
+	AT_HEAD r11, r11, at_m44
+	AT_HEAD r10, r10, at_m48
+	AT_HEAD r11, r10, at_m48
+	AT_HEAD r10, r11, at_m48
+	AT_HEAD r11, r11, at_m48
+	AT_HEAD r10, r10, at_m4C
+	AT_HEAD r11, r10, at_m4C
+	AT_HEAD r10, r11, at_m4C
+	AT_HEAD r11, r11, at_m4C
+	AT_HEAD r10, r10, at_m50
+	AT_HEAD r11, r10, at_m50
+	AT_HEAD r10, r11, at_m50
+	AT_HEAD r11, r11, at_m50
+	AT_HEAD r10, r10, at_m54
+	AT_HEAD r11, r10, at_m54
+	AT_HEAD r10, r11, at_m54
+	AT_HEAD r11, r11, at_m54
+	AT_HEAD r10, r10, at_m58
+	AT_HEAD r11, r10, at_m58
+	AT_HEAD r10, r11, at_m58
+	AT_HEAD r11, r11, at_m58
+	AT_HEAD r10, r10, at_m5C
+	AT_HEAD r11, r10, at_m5C
+	AT_HEAD r10, r11, at_m5C
+	AT_HEAD r11, r11, at_m5C
+	AT_HEAD r10, r10, at_m60
+	AT_HEAD r11, r10, at_m60
+	AT_HEAD r10, r11, at_m60
+	AT_HEAD r11, r11, at_m60
+	AT_HEAD r10, r10, at_m64
+	AT_HEAD r11, r10, at_m64
+	AT_HEAD r10, r11, at_m64
+	AT_HEAD r11, r11, at_m64
+	AT_HEAD r10, r10, at_m68
+	AT_HEAD r11, r10, at_m68
+	AT_HEAD r10, r11, at_m68
+	AT_HEAD r11, r11, at_m68
+	AT_HEAD r10, r10, at_m6C
+	AT_HEAD r11, r10, at_m6C
+	AT_HEAD r10, r11, at_m6C
+	AT_HEAD r11, r11, at_m6C
+	AT_HEAD r10, r10, at_m70
+	AT_HEAD r11, r10, at_m70
+	AT_HEAD r10, r11, at_m70
+	AT_HEAD r11, r11, at_m70
+	AT_HEAD r10, r10, at_m74
+	AT_HEAD r11, r10, at_m74
+	AT_HEAD r10, r11, at_m74
+	AT_HEAD r11, r11, at_m74
+	AT_HEAD r10, r10, at_m78
+	AT_HEAD r11, r10, at_m78
+	AT_HEAD r10, r11, at_m78
+	AT_HEAD r11, r11, at_m78
+	AT_HEAD r10, r10, at_m7C
+	AT_HEAD r11, r10, at_m7C
+	AT_HEAD r10, r11, at_m7C
+	AT_HEAD r11, r11, at_m7C
+	AT_HEAD r10, r10, at_m80
+	AT_HEAD r11, r10, at_m80
+	AT_HEAD r10, r11, at_m80
+	AT_HEAD r11, r11, at_m80
+	AT_HEAD r10, r10, at_m84
+	AT_HEAD r11, r10, at_m84
+	AT_HEAD r10, r11, at_m84
+	AT_HEAD r11, r11, at_m84
+	AT_HEAD r10, r10, at_m88
+	AT_HEAD r11, r10, at_m88
+	AT_HEAD r10, r11, at_m88
+	AT_HEAD r11, r11, at_m88
+	AT_HEAD r10, r10, at_m8C
+	AT_HEAD r11, r10, at_m8C
+	AT_HEAD r10, r11, at_m8C
+	AT_HEAD r11, r11, at_m8C
+	AT_HEAD r10, r10, at_m90
+	AT_HEAD r11, r10, at_m90
+	AT_HEAD r10, r11, at_m90
+	AT_HEAD r11, r11, at_m90
+	AT_HEAD r10, r10, at_m94
+	AT_HEAD r11, r10, at_m94
+	AT_HEAD r10, r11, at_m94
+	AT_HEAD r11, r11, at_m94
+	AT_HEAD r10, r10, at_m98
+	AT_HEAD r11, r10, at_m98
+	AT_HEAD r10, r11, at_m98
+	AT_HEAD r11, r11, at_m98
+	AT_HEAD r10, r10, at_m9C
+	AT_HEAD r11, r10, at_m9C
+	AT_HEAD r10, r11, at_m9C
+	AT_HEAD r11, r11, at_m9C
+	AT_HEAD r10, r10, at_mA0
+	AT_HEAD r11, r10, at_mA0
+	AT_HEAD r10, r11, at_mA0
+	AT_HEAD r11, r11, at_mA0
+	AT_HEAD r10, r10, at_mA4
+	AT_HEAD r11, r10, at_mA4
+	AT_HEAD r10, r11, at_mA4
+	AT_HEAD r11, r11, at_mA4
+	AT_HEAD r10, r10, at_mA8
+	AT_HEAD r11, r10, at_mA8
+	AT_HEAD r10, r11, at_mA8
+	AT_HEAD r11, r11, at_mA8
+	AT_HEAD r10, r10, at_mAC
+	AT_HEAD r11, r10, at_mAC
+	AT_HEAD r10, r11, at_mAC
+	AT_HEAD r11, r11, at_mAC
+	AT_HEAD r10, r10, at_mB0
+	AT_HEAD r11, r10, at_mB0
+	AT_HEAD r10, r11, at_mB0
+	AT_HEAD r11, r11, at_mB0
+	AT_HEAD r10, r10, at_mB4
+	AT_HEAD r11, r10, at_mB4
+	AT_HEAD r10, r11, at_mB4
+	AT_HEAD r11, r11, at_mB4
+	AT_HEAD r10, r10, at_mB8
+	AT_HEAD r11, r10, at_mB8
+	AT_HEAD r10, r11, at_mB8
+	AT_HEAD r11, r11, at_mB8
+	AT_HEAD r10, r10, at_mBC
+	AT_HEAD r11, r10, at_mBC
+	AT_HEAD r10, r11, at_mBC
+	AT_HEAD r11, r11, at_mBC
+	AT_HEAD r10, r10, at_mC0
+	AT_HEAD r11, r10, at_mC0
+	AT_HEAD r10, r11, at_mC0
+	AT_HEAD r11, r11, at_mC0
+	AT_HEAD r10, r10, at_mC4
+	AT_HEAD r11, r10, at_mC4
+	AT_HEAD r10, r11, at_mC4
+	AT_HEAD r11, r11, at_mC4
+	AT_HEAD r10, r10, at_mC8
+	AT_HEAD r11, r10, at_mC8
+	AT_HEAD r10, r11, at_mC8
+	AT_HEAD r11, r11, at_mC8
+	AT_HEAD r10, r10, at_mCC
+	AT_HEAD r11, r10, at_mCC
+	AT_HEAD r10, r11, at_mCC
+	AT_HEAD r11, r11, at_mCC
+	AT_HEAD r10, r10, at_mD0
+	AT_HEAD r11, r10, at_mD0
+	AT_HEAD r10, r11, at_mD0
+	AT_HEAD r11, r11, at_mD0
+	AT_HEAD r10, r10, at_mD4
+	AT_HEAD r11, r10, at_mD4
+	AT_HEAD r10, r11, at_mD4
+	AT_HEAD r11, r11, at_mD4
+	AT_HEAD r10, r10, at_mD8
+	AT_HEAD r11, r10, at_mD8
+	AT_HEAD r10, r11, at_mD8
+	AT_HEAD r11, r11, at_mD8
+	AT_HEAD r10, r10, at_mDC
+	AT_HEAD r11, r10, at_mDC
+	AT_HEAD r10, r11, at_mDC
+	AT_HEAD r11, r11, at_mDC
+	AT_HEAD r10, r10, at_mE0
+	AT_HEAD r11, r10, at_mE0
+	AT_HEAD r10, r11, at_mE0
+	AT_HEAD r11, r11, at_mE0
+	AT_HEAD r10, r10, at_mE4
+	AT_HEAD r11, r10, at_mE4
+	AT_HEAD r10, r11, at_mE4
+	AT_HEAD r11, r11, at_mE4
+	AT_HEAD r10, r10, at_mE8
+	AT_HEAD r11, r10, at_mE8
+	AT_HEAD r10, r11, at_mE8
+	AT_HEAD r11, r11, at_mE8
+	AT_HEAD r10, r10, at_mEC
+	AT_HEAD r11, r10, at_mEC
+	AT_HEAD r10, r11, at_mEC
+	AT_HEAD r11, r11, at_mEC
+	AT_HEAD r10, r10, at_mF0
+	AT_HEAD r11, r10, at_mF0
+	AT_HEAD r10, r11, at_mF0
+	AT_HEAD r11, r11, at_mF0
+	AT_HEAD r10, r10, at_mF4
+	AT_HEAD r11, r10, at_mF4
+	AT_HEAD r10, r11, at_mF4
+	AT_HEAD r11, r11, at_mF4
+	AT_HEAD r10, r10, at_mF8
+	AT_HEAD r11, r10, at_mF8
+	AT_HEAD r10, r11, at_mF8
+	AT_HEAD r11, r11, at_mF8
+	AT_HEAD r10, r10, at_mFC
+	AT_HEAD r11, r10, at_mFC
+	AT_HEAD r10, r11, at_mFC
+	AT_HEAD r11, r11, at_mFC
 
 
 
@@ -408,15 +425,13 @@ txt_exit:
 ; Text mode row entry point
 ;
 ;  r0: r1: Temp
-;  r2- r3: Temp (will be used as described in Common proc. code)
 ;      r4: Foreground (1) color
 ;      r5: Background (0) color
-;  r5- r9: Temp (will be used as described in Common proc. code)
-; r10-r15: Temp (will be used as described in Common proc. code)
+; r10-r11: Temp
 ;     r17: Border color
 ;     r19: Row to render (low 3 bits used, incremented)
-;     r20: Temp (will be used as described in Common proc. code)
-; r22-r23: Temp (will be used as described in Common proc. code)
+; r22-r23: Temp
+;       X: Temp
 ;       Y: VRAM pointer (increments by 40 at end of tile rows)
 ;       Z: Temp
 ;
@@ -424,19 +439,22 @@ txt_exit:
 ;
 m72_txt_row:
 
+	WAIT  ZL,      15
+
 	lds   r23,     m72_charrom
 	andi  r19,     0x07
 	add   r23,     r19     ; Tile row select
-	ldi   r20,     40      ; Count of tiles to render
-	ldi   r22,     6       ; Code block size
-	mov   r10,     r17
-	mov   r11,     r17
-	movw  r12,     r10
-	movw  r14,     r10     ; Initializing to border color for warm-up tile
-	mov   r2,      r5
-	mov   r3,      r5
-	mov   r6,      r5
-	mov   r7,      r4
-	mov   r8,      r4
-	mov   r9,      r4      ; Initialize FG / BG color pairs
-	rjmp  txt_entry        ; ( 447)
+	mov   r11,     r4      ; FG
+	mov   r10,     r5      ; BG
+	ldi   XH,      0
+	ldi   XL,      40      ; Count of tiles to render
+	ldi   r22,     4
+
+	ld    ZL,      Y+      ; Tile 0
+	mov   ZH,      r23     ; r23: Row select
+	lpm   r0,      Z
+	mul   r0,      r22     ; r22: 4 (size of AT_HEAD blocks in words)
+	movw  ZL,      r0
+	subi  ZL,      lo8(-(pm(at_b)))
+	sbci  ZH,      hi8(-(pm(at_b)))
+	ijmp

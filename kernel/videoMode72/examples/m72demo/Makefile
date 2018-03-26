@@ -16,7 +16,7 @@ DIRS    = $(OUTDIR) $(OBJDIR) $(DEPDIR)
 
 ## Kernel settings
 KERNEL_DIR = ../../../../kernel
-KERNEL_OPTIONS  = -DVIDEO_MODE=72 -DSOUND_MIXER=MIXER_TYPE_VSYNC -DM72_SPRITE_MODES=0x0001
+KERNEL_OPTIONS  = -DVIDEO_MODE=72 -DSOUND_MIXER=MIXER_TYPE_VSYNC -DM72_SPRITE_MODES=0x0001 -DM40_C64_GRAPHICS
 
 ## Packrom (.uze)
 PACKROM_DIR = ../../../../bin
@@ -42,16 +42,12 @@ LDFLAGS  = $(COMMON)
 LDFLAGS += -Wl,-Map=$(OUTDIR)/$(GAME).map
 LDFLAGS += -Wl,-gc-sections
 
-## Setup for Mode 74 stuff
-LDFLAGS +=
-
 ## Intel Hex file production flags
 HEX_FLASH_FLAGS = -R .eeprom
 
 
 ## Objects that must be built in order to link
 OBJECTS  = $(OBJDIR)/uzeboxVideoEngineCore.o $(OBJDIR)/uzeboxCore.o $(OBJDIR)/uzeboxSoundEngine.o $(OBJDIR)/uzeboxSoundEngineCore.o $(OBJDIR)/uzeboxVideoEngine.o
-OBJECTS += $(OBJDIR)/charrom.o
 OBJECTS += $(OBJDIR)/tileset.o
 OBJECTS += $(OBJDIR)/$(GAME).o
 
@@ -90,9 +86,6 @@ $(OBJDIR)/uzeboxVideoEngine.o: $(KERNEL_DIR)/uzeboxVideoEngine.c $(DIRS)
 ## Compile game sources
 $(OBJDIR)/$(GAME).o: main.c $(DIRS)
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/charrom.o: charrom.s $(DIRS)
-	$(CC) $(INCLUDES) $(ASMFLAGS) -c $< -o $@
 
 $(OBJDIR)/tileset.o: tileset.s $(DIRS)
 	$(CC) $(INCLUDES) $(ASMFLAGS) -c $< -o $@
