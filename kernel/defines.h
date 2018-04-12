@@ -85,8 +85,10 @@
 	#define MIXER_TYPE_VSYNC 	0
 	#define MIXER_TYPE_INLINE	1
 
-	#define MIDI 0
-	#define MOD	 1
+	#define MIDI	0
+	#define MOD	1
+	#define STREAM	2
+
 
  	/*
 	 * Defines the video mode to use. 
@@ -347,6 +349,13 @@
 
 	#ifndef MUSIC_ENGINE
 		#define MUSIC_ENGINE MIDI
+	#endif
+
+
+	#if MUSIC_ENGINE == STREAM
+		#ifndef SONG_BUFFER_MIN
+			#define SONG_BUFFER_MIN	2
+		#endif
 	#endif
 
 	/*
@@ -610,3 +619,4 @@
 	#endif
 
 #endif
+
