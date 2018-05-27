@@ -30,8 +30,8 @@ Overall key features of the frame renderer are as follows:
   along with arbitrary VRAM start positions.
 
 - There are 4 palettes provided in a 16 byte array (4 x 4 colors), either can
-  be selected for any row, and Color 0 may also be overridden for any line
-  from a scanline color table.
+  be selected for any row, and Color 0 and Color 1 may also be overridden for
+  any line from scanline color tables.
 
 - Attribute modes are provided (compile time option as these further modes
   take significant amount of ROM) in various configurations.
@@ -46,7 +46,7 @@ Overall key features of the frame renderer are as follows:
 Overall key features of the sprite engine are as follows:
 
 - Works with 8 x 8 pixel sprite tiles of either 3 or 4 colors plus
-  transparency. The latter uses specially formatted 20 byte sprite tiles.
+  transparency. The latter uses specially formatted 24 byte sprite tiles.
 
 - Blitter concept with background restoring: for rendering sprites, blits are
   to be called placing sprites on the canvas like if it was a regular
@@ -59,10 +59,10 @@ Overall key features of the sprite engine are as follows:
 - RAM tile usage can be controlled allowing the use of any number of RAM
   tiles.
 
-- Can perform blits over any of the row modes. It can cope with different
-  tilesets on the same screen (allowing the use of more than 256 ROM tiles),
-  and can use RAM tiles as well as targets (so it will blit normally over RAM
-  tiles not allocated for sprites).
+- Can perform blits over Attribute mode 0 and mode 1. It can cope with
+  different tilesets on the same screen (allowing the use of more than 256 ROM
+  tiles), and can use RAM tiles as well as targets (so it will blit normally
+  over RAM tiles not allocated for sprites).
 
 - Supports masking: the tile layer may partially cover sprite content.
 
@@ -83,7 +83,7 @@ ROM 2bpp tiles and Sprite tiles
 
 A 2 bits per pixel tile takes 16 bytes. It is laid out in the following manner
 where right numbers indicate the relative byte offset (decimal) and the left
-number pair the bits used to represent the pixel:
+number pair the bits used to represent the pixel: ::
 
     00:76 00:54 00:32 00:10 01:76 01:54 01:32 01:10
     02:76 02:54 02:32 02:10 03:76 03:54 03:32 03:10
@@ -112,41 +112,14 @@ ROM tilesets can start at any 256 byte boundary.
 Four color sprites
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Four color sprite tiles are 20 bytes consisting 4 bytes transparency data and
-a 16 byte tile. Each bit position in these 4 bytes corresponds to a row of the
-tile, providing 4 flag bits (one bit in each byte) for each row.
+Four color sprite tiles are 24 bytes, each sprite line taking 3 bytes. These 3
+bytes are as follows:
 
-The flag bits apply to pixel pairs as follows:
+- Byte 0: Left half pixels (like a normal 2bpp tile's left half)
+- Byte 1: Right half pixels (like a normal 2bpp tile's right half)
+- Byte 2: Transparency mask, sprite pixel shows where mask bit is 1.
 
-- byte 0: Pixels 0 and 1 (leftmost on the row)
-- byte 1: Pixels 2 and 3
-- byte 2: Pixels 4 and 5
-- byte 3: Pixels 6 and 7 (rightmost on the row)
-
-When the flag is clear, no trasparency is used (pixel data is interpreted like
-for a normal tile). When the flag is set, the codes corresponding the pixels
-are interpreted as follows:
-
-- 0000b: Color 0 + Transp.
-- 0001b: Transp. + Transp.
-- 0010b: Transp. + Transp.
-- 0011b: Transp. + Transp.
-- 0100b: Color 1 + Transp.
-- 0101b: Transp. + Transp.
-- 0110b: Transp. + Color 2
-- 0111b: Transp. + Color 3
-- 1000b: Transp. + Color 0
-- 1001b: Transp. + Color 1
-- 1010b: Transp. + Transp.
-- 1011b: Color 2 + Transp.
-- 1100b: Transp. + Transp.
-- 1101b: Transp. + Transp.
-- 1110b: Transp. + Transp.
-- 1111b: Color 3 + Transp.
-
-Note that when the code encodes colors, the color corresponds to what color
-would be output if the flag was clear, so the flag essentially encodes a
-transparency mask.
+The transparency mask is high bits corresponding to leftmost pixels.
 
 
 

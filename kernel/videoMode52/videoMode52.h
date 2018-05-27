@@ -54,6 +54,15 @@ typedef struct{
 
 
 /*
+** Type for sprite data pointers where ROM / RAM source is selected by flag
+*/
+typedef union{
+ M52_FLASHPTR u8* romp;
+              u8* ramp;
+}m52_sprite_dataptr_t;
+
+
+/*
 ** See documentations in videoMode52.s
 */
 extern volatile u8  m52_config;
@@ -66,8 +75,14 @@ extern u8* volatile m52_col1_p;
 #if (M52_RESET_ENABLE != 0)
 extern volatile u16 m52_reset;
 #endif
-extern volatile u8  m52_rtmax;
-extern volatile u8  m52_rtbase;
+#if (M52_SPR_ENABLE != 0)
+extern u8* volatile m52_sprite_work_p;
+extern volatile u8  m52_sprite_ramt_max;
+extern volatile u8  m52_sprite_ramt_base;
+extern u8* volatile m52_ramt_mski_p;
+extern M52_FLASHPTR u8* volatile m52_mskpool_rom_p;
+extern u8* volatile m52_mskpool_ram_p;
+#endif
 
 void M52_SetTileset(u8 tsno, M52_FLASHPTR u8* data, M52_FLASHPTR u8* mski);
 void M52_LoadRowDesc(M52_FLASHPTR m52_rowdesc_t* data);
@@ -78,9 +93,11 @@ void M52_Halt(void) __attribute__((noreturn));
 void M52_Seq(void);
 #if (M52_SPR_ENABLE != 0)
 void M52_VramRestore(void);
-void M52_BlitSprite(u16 spo, u8 xl, u8 yl, u8 flg);
-void M52_BlitSpriteCol(u16 spo, u8 xl, u8 yl, u8 flg, u8 col);
-void M52_PutPixel(u8 col, u8 xl, u8 yl, u8 flg);
+void M52_ResReset(void);
+void M52_BlitSprite(m52_sprite_dataptr_t data, u16 xl, u8 yl, u8 flg);
+void M52_BlitSpriteRom(M52_FLASHPTR u8* data, u16 xl, u8 yl, u8 flg);
+void M52_BlitSpriteRam(u8* data, u16 xl, u8 yl, u8 flg);
+void M52_PutPixel(u8 col, u16 xl, u8 yl, u8 flg);
 #endif
 
 
@@ -92,13 +109,12 @@ void M52_PutPixel(u8 col, u8 xl, u8 yl, u8 flg);
 
 /*
 ** Sprite blitter flags, for use with M52_BlitSprite.
-** Sprite importance is ignored in this mode, it is left only for
-** compatibility with Mode 74.
 */
 #define M52_SPR_FLIPX            0x01U
 #define M52_SPR_FLIPY            0x04U
-#define M52_SPR_SPIRAM_A16       0x02U
+#define M52_SPR_RAM              0x02U
 #define M52_SPR_MASK             0x10U
+#define M52_SPR_4COL             0x20U
 #define M52_SPR_I3               0xC0U
 #define M52_SPR_I2               0x80U
 #define M52_SPR_I1               0x40U

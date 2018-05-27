@@ -37,8 +37,7 @@ void InitializeVideoMode()
 	m52_reset  = 0U;    /* Reset starts off disabled (so logo may display) */
 #endif
 #if (M52_SPR_ENABLE != 0)
-	m52_rtmax  = 32U;   /* Sprites: Allow 32 RAM tiles by default */
-	m52_rtbase = 72U;   /* Sprites: In the range 0x0A00 - 0x0DFF */
+	m52_sprite_ramt_max = 0U; /* Initially disable sprites by giving 0 RAM tiles */
 #endif
 }
 

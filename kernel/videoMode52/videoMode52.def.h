@@ -94,6 +94,7 @@
 /* Use Named Address Spaces if enabled. Otherwise pgmspace.h is used. This
 ** doesn't have a significant impact as normally you would use the
 ** M52_ROMTILESET macro for defining ROM tilesets */
+
 #ifndef M52_USE_NAS
 	#define M52_USE_NAS        0
 #endif
@@ -103,6 +104,7 @@
 /* Set maximal row width in tiles. A width of 36 tiles might crop the edges on
 ** some TV sets, you can ask for less to allow for a more complex inline
 ** mixer. */
+
 #ifndef M52_TILES_MAX_H
 	#define M52_TILES_MAX_H    34
 #endif
@@ -123,6 +125,7 @@
 ** example locate it at 0x1000, below the stack if you know your game doesn't
 ** use too much stack, which frees up RAM potentially useful for RAM tiles
 ** (which are below 0x1000). */
+
 #ifndef M52_ROWDESC_ADDR
 	#define M52_ROWDESC_ADDR   0
 #endif
@@ -156,6 +159,7 @@
 
 /* Attribute modes can be enabled with these. Color 0 and Color 1 attributes
 ** take 2 Kbytes ROM space each, Color 1,2,3 attributes take 6 Kbytes. */
+
 #ifndef M52_ENABLE_ATTR0
 	#define M52_ENABLE_ATTR0   0
 #endif
@@ -174,46 +178,4 @@
 
 #ifndef M52_SPR_ENABLE
 	#define M52_SPR_ENABLE     SPRITES_ENABLED
-#endif
-
-
-
-/* Enable the masking system. Masks allow sprites to show behind tiles, using
-** 1bpp data. Masking costs 1 extra byte for each tile for holding indices
-** into a mask table. It also takes some flash and extra CPU time. */
-
-#ifndef M52_MSK_ENABLE
-	#define M52_MSK_ENABLE     0
-#endif
-
-/* ROM mask index base. The ROM has 2048 tile slots, this list may have at
-** most that many bytes. It doesn't need to be aligned to any boundary.
-** Typically tile assets are packed together in the ROM taking one
-** continuous region: this base offset may be forged so the first used
-** location belongs to the first sprite. Example: If tiles begin at 0x8000,
-** for 256 tiles, and you want to have the mask indices for them at 0xA000,
-** 256 bytes, the base should be set up as (0xA000 - (0x8000 / 32)). */
-
-#ifndef M52_ROMMASKIDX_OFF
-	#if ((M52_SPR_ENABLE != 0) && (M52_MSK_ENABLE != 0))
-		#error "A ROM mask index base (M52_ROMMASKIDX_OFF) has to be defined for the sprite system!"
-	#endif
-#endif
-
-/* RAM mask index base. 1 byte is taken for each RAM tile available for the
-** sprite engine. This is used to make it unnecessary to always look up mask
-** indices by the background VRAM (in SPI RAM). It can be located under the
-** palette buffer (as long as renders finish in one VBlank; as it is only
-** needed for sprite rendering). */
-
-#ifndef M52_RAMMASKIDX_OFF
-	#define M52_RAMMASKIDX_OFF 0x1020
-#endif
-
-/* ROM mask pool's address. At most 256 x 8 bytes (depends on used masks).
-** If no actual masks are used, this may be left zero. This has to be aligned
-** at a 8 byte boundary. */
-
-#ifndef M52_ROMMASK_OFF
-	#define M52_ROMMASK_OFF    0
 #endif

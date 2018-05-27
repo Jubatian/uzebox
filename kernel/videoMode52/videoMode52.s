@@ -310,7 +310,7 @@
 ; Sprite library. Included here to avoid it interfering with relative jumps &
 ; calls within the Mode 52 core.
 ;
-;#include "videoMode52/videoMode52_sprite.s"
+#include "videoMode52/videoMode52_sprite.s"
 #endif
 
 
