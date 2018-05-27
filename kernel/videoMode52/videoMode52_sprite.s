@@ -414,6 +414,7 @@ bpixnm:
 	add   r23,     r22
 	add   YL,      r23     ; Target pixel quad offset in RAM tile
 	ld    r0,      Y
+	com   r19
 	and   r0,      r19
 	or    r0,      r24
 	st    Y,       r0      ; Pixel completed
@@ -906,8 +907,8 @@ rtanew:
 
 rtamro:
 	andi  r19,     0x03    ; ROM tileset to use for VRAM row (byte 3 of row desc.)
-	lds   ZL,      m52_romt_pht + 0
-	lds   ZH,      m52_romt_pht + 1
+	ldi   ZL,      lo8(m52_romt_pht)
+	ldi   ZH,      hi8(m52_romt_pht)
 	add   ZL,      r19
 	adc   ZH,      r1
 	ld    r15,     Z       ; ROM tile address base
@@ -917,8 +918,8 @@ rtamro:
 	add   r15,     r1      ; ROM tile address (Bit0 is 0, indicating ROM source)
 	clr   r1
 	lsl   r19
-	lds   ZL,      m52_mski_pt + 0
-	lds   ZH,      m52_mski_pt + 1
+	ldi   ZL,      lo8(m52_mski_pt)
+	ldi   ZH,      hi8(m52_mski_pt)
 	add   ZL,      r19
 	adc   ZH,      r1
 	ld    r0,      Z+

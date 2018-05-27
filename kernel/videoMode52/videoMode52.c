@@ -38,6 +38,7 @@ void InitializeVideoMode()
 #endif
 #if (M52_SPR_ENABLE != 0)
 	m52_sprite_ramt_max = 0U; /* Initially disable sprites by giving 0 RAM tiles */
+	m52_ramt_mski_p = NULL;   /* Just set it NULL to ensure no problem if the user doesn't need it */
 #endif
 }
 
