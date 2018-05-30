@@ -33,7 +33,7 @@
 #define CFG1_PLANE (M52_CFG1_ROMT_0 | M52_CFG1_PAL_0 | M52_CFG1_WIDTH_36)
 
 #define CFG0_EXT   (M52_CFG0_NOATTR | M52_CFG0_SPR_OFF)
-#define CFG1_EXT   (M52_CFG1_ROMT_2 | M52_CFG1_PAL_0 | M52_CFG1_WIDTH_36)
+#define CFG1_EXT   (M52_CFG1_ROMT_2 | M52_CFG1_PAL_1 | M52_CFG1_WIDTH_36)
 
 
 static u8 imgrows[30][40];
@@ -85,12 +85,70 @@ static u8 sprite_ws[80U * 3U];
 static u8 color0[224];
 
 
+/* Color bits: B2-G3-R3 */
+#define CSK0 ((1U << 6) | (0U << 3) | (0U))
+#define CSK1 ((1U << 6) | (0U << 3) | (1U))
+#define CSK2 ((1U << 6) | (0U << 3) | (2U))
+#define CSK3 ((1U << 6) | (1U << 3) | (2U))
+#define CSK4 ((1U << 6) | (1U << 3) | (3U))
+#define CSK5 ((2U << 6) | (1U << 3) | (3U))
+#define CSK6 ((2U << 6) | (2U << 3) | (3U))
+#define CSK7 ((2U << 6) | (2U << 3) | (4U))
+#define CSK8 ((2U << 6) | (3U << 3) | (4U))
+#define CSK9 ((2U << 6) | (3U << 3) | (5U))
+#define CGD9 ((1U << 6) | (4U << 3) | (4U))
+#define CGD8 ((1U << 6) | (3U << 3) | (4U))
+#define CGD7 ((1U << 6) | (3U << 3) | (3U))
+#define CGD6 ((1U << 6) | (2U << 3) | (3U))
+#define CGD5 ((0U << 6) | (2U << 3) | (3U))
+#define CGD4 ((0U << 6) | (2U << 3) | (2U))
+#define CGD3 ((0U << 6) | (1U << 3) | (2U))
+#define CGD2 ((0U << 6) | (1U << 3) | (1U))
+#define CGD1 ((0U << 6) | (0U << 3) | (1U))
+
+static const u8 color0_data[224] PROGMEM = {
+ CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0,
+ CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0,
+ CSK0, CSK0, CSK0, CSK1, CSK0, CSK1, CSK0, CSK1,
+ CSK0, CSK1, CSK0, CSK1, CSK0, CSK1, CSK1, CSK1,
+ CSK1, CSK1, CSK1, CSK1, CSK1, CSK2, CSK1, CSK2,
+ CSK1, CSK2, CSK1, CSK2, CSK1, CSK2, CSK2, CSK2,
+ CSK2, CSK2, CSK3, CSK2, CSK3, CSK2, CSK3, CSK2,
+ CSK3, CSK2, CSK3, CSK3, CSK3, CSK4, CSK3, CSK4,
+ CSK3, CSK4, CSK3, CSK4, CSK3, CSK4, CSK3, CSK4,
+ CSK4, CSK4, CSK4, CSK4, CSK5, CSK4, CSK5, CSK4,
+ CSK5, CSK4, CSK5, CSK5, CSK5, CSK5, CSK6, CSK5,
+ CSK6, CSK6, CSK7, CSK6, CSK7, CSK7, CSK8, CSK7,
+ CSK8, CSK9, CGD9, CGD8, CGD7, CGD6, CGD7, CGD6,
+ CGD5, CGD6, CGD5, CGD6, CGD5, CGD5, CGD5, CGD4,
+ CGD5, CGD4, CGD5, CGD4, CGD5, CGD4, CGD4, CGD4,
+ CGD4, CGD4, CGD3, CGD4, CGD3, CGD4, CGD3, CGD4,
+ CGD3, CGD4, CGD3, CGD4, CGD3, CGD4, CGD3, CGD3,
+ CGD3, CGD3, CGD3, CGD3, CGD3, CGD3, CGD3, CGD3,
+ CGD3, CGD2, CGD3, CGD2, CGD3, CGD2, CGD3, CGD2,
+ CGD3, CGD2, CGD3, CGD2, CGD2, CGD2, CGD2, CGD2,
+ CGD2, CGD2, CGD2, CGD2, CGD2, CGD2, CGD2, CGD1,
+ CGD2, CGD1, CGD2, CGD1, CGD2, CGD1, CGD2, CGD1,
+ CGD2, CGD1, CGD2, CGD1, CGD2, CGD1, CGD2, CGD1,
+ CGD2, CGD1, CGD2, CGD1, CGD2, CGD1, CGD1, CGD1,
+ CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
+ CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
+ CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
+ CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1
+};
+
+
 int main(){
 
 	m52_palette[0] = 0x00U;
 	m52_palette[1] = 0x52U;
 	m52_palette[2] = 0xA4U;
 	m52_palette[3] = 0xB6U;
+
+	m52_palette[4] = 0x00U;
+	m52_palette[5] = 0x5CU;
+	m52_palette[6] = 0xF6U;
+	m52_palette[7] = 0xF6U;
 
 	u16 i = 0U;
 
@@ -108,7 +166,7 @@ int main(){
 	m52_config = M52_CFG_ENABLE | M52_CFG_COL0_PHY;
 
 	for (u8 col = 0U; col < 224U; col ++){
-		color0[col] = col & 0xDFU;
+		color0[col] = pgm_read_byte(&color0_data[col]);
 	}
 
 	for (u8 y = 0U; y < 30U; y ++){
