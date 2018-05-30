@@ -69,8 +69,7 @@ m52_blitspritept:
 	adc   r15,     r1      ; Set up mask source
 	brts  .+8              ; Y location positive (move down?)
 	mov   r0,      r23     ; If positive, calculate offset on target
-	lsl   r0               ; Destination increment is 4 bytes / row
-	lsl   r0
+	lsl   r0               ; Destination increment is 2 bytes / row
 	add   YL,      r0
 
 	; Calculate source offset and increment (A sprite line is 2 or 3 bytes)
@@ -146,7 +145,7 @@ spblret:
 	breq  spbex
 	add   r24,     XL
 	adc   r25,     XH      ; Source increment / decrement
-	subi  YL,      0xFC    ; Destination increment
+	subi  YL,      0xFE    ; Destination increment
 spbl:
 	sbrc  r16,     4       ; Has mask?
 	rjmp  spbml            ; Enter render loop with mask
@@ -1620,7 +1619,7 @@ splpxl:
 	and   r21,     r19     ; Mask source pixels
 	com   r19
 	and   r18,     r19     ; Mask destination pixels
-	or    r18,     r20
+	or    r18,     r21
 	std   Y + 0,   r18
 
 	rjmp  spblret
@@ -1644,7 +1643,7 @@ splpxb:
 	and   r21,     r19     ; Mask source pixels
 	com   r19
 	and   r18,     r19     ; Mask destination pixels
-	or    r18,     r20
+	or    r18,     r21
 	std   Y + 0,   r18
 
 	swap  ZL
@@ -1654,7 +1653,7 @@ splpxb:
 	and   r20,     r19     ; Mask source pixels
 	com   r19
 	and   r18,     r19     ; Mask destination pixels
-	or    r18,     r21
+	or    r18,     r20
 	std   Y + 1,   r18
 
 	rjmp  spblret
@@ -1679,7 +1678,7 @@ splpxr:
 	and   r20,     r19     ; Mask source pixels
 	com   r19
 	and   r18,     r19     ; Mask destination pixels
-	or    r18,     r21
+	or    r18,     r20
 	std   Y + 1,   r18
 
 	rjmp  spblret

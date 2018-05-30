@@ -23,7 +23,9 @@
 ; allocations and tile copies.
 ;
 ; It uses whatever VRAM layout is defined. Y coordinates are by logical
-; scanline, Y = 8 corresponds to line 0. Wraps.
+; scanline, X coordinates assume a 40 tiles wide display over which the actual
+; area is centered (for example at 32 tiles width, X = 32 is the leftmost
+; pixel column).
 ;
 ; The maximal count of RAM tiles used for sprites may be specified. Sprites
 ; will take RAM tiles incrementally from m52_rtbase until hitting the limit
@@ -101,9 +103,9 @@
 ; Blits a 8x8 sprite.
 ;
 ; Assumes a 40 tiles wide target on which tile rows are centered. xl and yl
-; specifies locations on this target by the sprite's lower right corner (so
-; location 0:0 produces no sprite, 1:1 would make the lower right corner
-; pixel visible).
+; specifies locations on this target by the sprite's lower right corner (a
+; sprite at 40:8 would be visible in the upper left corner of a 32 tiles wide
+; display).
 ;
 ; The sprite has fixed 8x8 pixel layout, 2 or 3 bytes per line, 16 or 24 bytes
 ; total. See M52_Manual.rst for descriptions on the sprite formats.
@@ -138,8 +140,7 @@
 ; Plots a single pixel.
 ;
 ; Assumes a 40 tiles wide target on which tile rows are centered. xl and yl
-; specifies locations on this target with a 8:8 offset to align proper with
-; sprites (so 8:8 is the upper left corner).
+; specifies locations on this target.
 ;
 ; A pixel importance value of 3 (M52_SPR_I3) gives the highest possible
 ; importance score to the allocated RAM tile. A pixel importance of 1
@@ -285,8 +286,7 @@ M52_ResReset:
 ; Plots a single pixel.
 ;
 ; Assumes a 40 tiles wide target on which tile rows are centered. xl and yl
-; specifies locations on this target with a 8:8 offset to align proper with
-; sprites (so 8:8 is the upper left corner of a 40 tile target).
+; specifies locations on this target.
 ;
 ; A pixel importance value of 3 (M52_SPR_I3) gives the highest possible
 ; importance score to the allocated RAM tile. A pixel importance of 1
@@ -317,7 +317,6 @@ M52_PutPixel:
 	; Load tile row descriptor where the pixel is output
 
 	mov   ZL,      r20
-	subi  ZL,      8
 	lsr   ZL
 	andi  ZL,      0x7C
 	ldi   ZH,      0
@@ -334,11 +333,6 @@ M52_PutPixel:
 	andi  ZL,      0x07
 	add   r22,     ZL
 	adc   r23,     r1
-
-	; Adjust X for the 8 pixel offset
-
-	subi  r22,     0x08
-	sbci  r23,     0x00
 
 	; Break down X to column & in-tile coordinate
 
@@ -440,9 +434,9 @@ bpixe:
 ; Blits a 8x8 sprite.
 ;
 ; Assumes a 40 tiles wide target on which tile rows are centered. xl and yl
-; specifies locations on this target by the sprite's lower right corner (so
-; location 0:0 produces no sprite, 1:1 would make the lower right corner
-; pixel visible).
+; specifies locations on this target by the sprite's lower right corner (a
+; sprite at 40:8 would be visible in the upper left corner of a 32 tiles wide
+; display).
 ;
 ; The sprite has fixed 8x8 pixel layout, 2 or 3 bytes per line, 16 or 24 bytes
 ; total. See M52_Manual.rst for descriptions on the sprite formats.
