@@ -64,10 +64,9 @@ m52_blitspritept:
 	; the target).
 
 	bst   r23,     7       ; T: Set if Y location negative, clear otherwise
-	brts  .+4              ; Y location positive (move down?)
+	brts  .+10             ; Y location positive (move down?)
 	add   r14,     r23
 	adc   r15,     r1      ; Set up mask source
-	brts  .+8              ; Y location positive (move down?)
 	mov   r0,      r23     ; If positive, calculate offset on target
 	lsl   r0               ; Destination increment is 2 bytes / row
 	add   YL,      r0
@@ -91,11 +90,8 @@ m52_blitspritept:
 	mov   r21,     r23
 	rjmp  spbs1            ; Subtract lines to skip (Y loc. negative!)
 spbs0:
-	sbrs  r16,     5
-	rjmp  .+6
 	ldi   XL,      0x03    ; 4+1 color sprite: 3 bytes / line
-	ldi   XH,      0x00    ; Source increments after each line
-	rjmp  .+4
+	sbrs  r16,     5
 	ldi   XL,      0x02    ; 3+1 color sprite: 2 bytes / line
 	ldi   XH,      0x00    ; Source increments after each line
 	brtc  spbs2            ; If Y location is positive (moving down), then OK
@@ -1189,7 +1185,7 @@ spll3f:
 	lpm   r18,     Z+
 	lpm   ZL,      Z
 	ldi   ZH,      hi8(sp_fl2bpp)
-	lpm   r21,     Z
+	lpm   r20,     Z
 	mov   ZL,      r18
 	lpm   r18,     Z
 	rjmp  spll3comm
@@ -1205,7 +1201,7 @@ spll3fr:
 	ld    r18,     Z+
 	ld    ZL,      Z
 	ldi   ZH,      hi8(sp_fl2bpp)
-	lpm   r21,     Z
+	lpm   r20,     Z
 	mov   ZL,      r18
 	lpm   r18,     Z
 

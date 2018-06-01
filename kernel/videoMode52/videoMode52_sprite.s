@@ -667,10 +667,8 @@ bspuler:
 m52_blitspriteptprep:
 
 	; Calculate sprite part importance. This depends on how large portion
-	; of the sprite is within the tile, its set importance, and a little
-	; also on the mask (a masked sprite is considered slightly less
-	; important). Produces a number between 0 and 15, the higher the more
-	; important.
+	; of the sprite is within the tile and its set importance. Produces a
+	; number between 0 and 15, the higher the more important.
 
 	ldi   r20,     15      ; Importance into r20
 	sbrs  r22,     7       ; X alignment (0xF9 - 0x07)
@@ -681,11 +679,9 @@ m52_blitspriteptprep:
 	sub   r20,     r23
 	sbrc  r23,     7
 	add   r20,     r23
-	sbrc  r16,     4       ; Has mask?
-	subi  r20,     1
 	mov   r21,     r16     ; Importance bits at 6 - 7
-	swap  r21              ; Importance bits at 3 - 4
-	lsr   r21              ; Importance bits at 2 - 3 (0, 2, 4 or 6)
+	swap  r21              ; Importance bits at 2 - 3
+	lsr   r21              ; Importance bits at 1 - 2 (0, 2, 4 or 6)
 	andi  r21,     0x06
 	add   r20,     r21     ; Importance added
 	subi  r20,     0x06    ; Compensate it (so lower importance makes result less)
