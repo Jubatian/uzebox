@@ -1,7 +1,6 @@
 /*
- *  Uzebox mode 8 testing
- *  Copyright (C) 2016 Alec Bourque,
- *                     Sandor Zsuga (Jubatian)
+ *  Lisunow Li-2 demo
+ *  Copyright (C) 2018 Sandor Zsuga (Jubatian)
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
