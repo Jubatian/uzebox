@@ -25,8 +25,14 @@
 
 #include "tilestop.h"
 #include "tilesbot.h"
+#include "tilesmsk.h"
 #include "fontdata.h"
 #include "planemap.h"
+
+
+
+#define PLANE_X    5U
+#define PLANE_Y    10U
 
 
 #define CFG0_PLANE (M52_CFG0_NOATTR | M52_CFG0_COL0_RELOAD)
@@ -37,7 +43,7 @@
 
 
 static u8 imgrows[30][40];
-static u8 extrows[ 2][40];
+static u8 extrows[ 2][37];
 
 
 static const m52_rowdesc_t rows[32] PROGMEM = {
@@ -78,12 +84,16 @@ static const m52_rowdesc_t rows[32] PROGMEM = {
  { extrows[ 1], CFG0_EXT,   CFG1_EXT   },
 };
 
-static u8 rowsel[6] = { 0U, 255U, 0U, 0U, 0U, 0U };
+static u8 rowsel[8] = { 0U, 255U, 0U, 0U, 0U, 0U, 0U, 0U };
 
 static u8 sprite_ws[80U * 3U];
 
 static u8 color0[224];
 
+static u8 ramtmaskidx[128];
+
+
+/* Background (Sky and ground imitation) */
 
 /* Color bits: B2-G3-R3 */
 #define CSK0 ((1U << 6) | (0U << 3) | (0U))
@@ -106,8 +116,7 @@ static u8 color0[224];
 #define CGD2 ((0U << 6) | (1U << 3) | (1U))
 #define CGD1 ((0U << 6) | (0U << 3) | (1U))
 
-static const u8 color0_data[224] PROGMEM = {
- CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0,
+static const u8 color0_data[200] PROGMEM = {
  CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0, CSK0,
  CSK0, CSK0, CSK0, CSK1, CSK0, CSK1, CSK0, CSK1,
  CSK0, CSK1, CSK0, CSK1, CSK0, CSK1, CSK1, CSK1,
@@ -132,10 +141,217 @@ static const u8 color0_data[224] PROGMEM = {
  CGD2, CGD1, CGD2, CGD1, CGD2, CGD1, CGD2, CGD1,
  CGD2, CGD1, CGD2, CGD1, CGD2, CGD1, CGD1, CGD1,
  CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
- CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
- CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1,
  CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1, CGD1
 };
+
+
+
+/* Sine table */
+static const unsigned char sine[] PROGMEM = {
+ 0x81U, 0x84U, 0x87U, 0x8AU, 0x8EU, 0x91U, 0x94U, 0x97U,
+ 0x9AU, 0x9DU, 0xA0U, 0xA3U, 0xA6U, 0xA9U, 0xACU, 0xAFU,
+ 0xB2U, 0xB5U, 0xB7U, 0xBAU, 0xBDU, 0xC0U, 0xC2U, 0xC5U,
+ 0xC8U, 0xCAU, 0xCDU, 0xCFU, 0xD2U, 0xD4U, 0xD6U, 0xD9U,
+ 0xDBU, 0xDDU, 0xDFU, 0xE1U, 0xE3U, 0xE5U, 0xE7U, 0xE9U,
+ 0xEAU, 0xECU, 0xEEU, 0xEFU, 0xF1U, 0xF2U, 0xF3U, 0xF5U,
+ 0xF6U, 0xF7U, 0xF8U, 0xF9U, 0xFAU, 0xFBU, 0xFCU, 0xFCU,
+ 0xFDU, 0xFDU, 0xFEU, 0xFEU, 0xFFU, 0xFFU, 0xFFU, 0xFFU,
+ 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFEU, 0xFEU, 0xFDU, 0xFDU,
+ 0xFCU, 0xFCU, 0xFBU, 0xFAU, 0xF9U, 0xF8U, 0xF7U, 0xF6U,
+ 0xF5U, 0xF3U, 0xF2U, 0xF1U, 0xEFU, 0xEEU, 0xECU, 0xEAU,
+ 0xE9U, 0xE7U, 0xE5U, 0xE3U, 0xE1U, 0xDFU, 0xDDU, 0xDBU,
+ 0xD9U, 0xD6U, 0xD4U, 0xD2U, 0xCFU, 0xCDU, 0xCAU, 0xC8U,
+ 0xC5U, 0xC2U, 0xC0U, 0xBDU, 0xBAU, 0xB7U, 0xB5U, 0xB2U,
+ 0xAFU, 0xACU, 0xA9U, 0xA6U, 0xA3U, 0xA0U, 0x9DU, 0x9AU,
+ 0x97U, 0x94U, 0x91U, 0x8EU, 0x8AU, 0x87U, 0x84U, 0x81U,
+ 0x7FU, 0x7CU, 0x79U, 0x76U, 0x72U, 0x6FU, 0x6CU, 0x69U,
+ 0x66U, 0x63U, 0x60U, 0x5DU, 0x5AU, 0x57U, 0x54U, 0x51U,
+ 0x4EU, 0x4BU, 0x49U, 0x46U, 0x43U, 0x40U, 0x3EU, 0x3BU,
+ 0x38U, 0x36U, 0x33U, 0x31U, 0x2EU, 0x2CU, 0x2AU, 0x27U,
+ 0x25U, 0x23U, 0x21U, 0x1FU, 0x1DU, 0x1BU, 0x19U, 0x17U,
+ 0x16U, 0x14U, 0x12U, 0x11U, 0x0FU, 0x0EU, 0x0DU, 0x0BU,
+ 0x0AU, 0x09U, 0x08U, 0x07U, 0x06U, 0x05U, 0x04U, 0x04U,
+ 0x03U, 0x03U, 0x02U, 0x02U, 0x01U, 0x01U, 0x01U, 0x01U,
+ 0x01U, 0x01U, 0x01U, 0x01U, 0x02U, 0x02U, 0x03U, 0x03U,
+ 0x04U, 0x04U, 0x05U, 0x06U, 0x07U, 0x08U, 0x09U, 0x0AU,
+ 0x0BU, 0x0DU, 0x0EU, 0x0FU, 0x11U, 0x12U, 0x14U, 0x16U,
+ 0x17U, 0x19U, 0x1BU, 0x1DU, 0x1FU, 0x21U, 0x23U, 0x25U,
+ 0x27U, 0x2AU, 0x2CU, 0x2EU, 0x31U, 0x33U, 0x36U, 0x38U,
+ 0x3BU, 0x3EU, 0x40U, 0x43U, 0x46U, 0x49U, 0x4BU, 0x4EU,
+ 0x51U, 0x54U, 0x57U, 0x5AU, 0x5DU, 0x60U, 0x63U, 0x66U,
+ 0x69U, 0x6CU, 0x6FU, 0x72U, 0x76U, 0x79U, 0x7CU, 0x7FU
+};
+#define sintb(x) pgm_read_byte(&(sine[((x)      ) & 0xFFU]))
+#define costb(x) pgm_read_byte(&(sine[((x) + 64U) & 0xFFU]))
+
+
+
+/*
+** Scrolling overlay text
+*/
+static const char ovr_text[] PROGMEM =
+ "This is Lisunov Li-2 demo by Jubatian for the Uzebox console. "
+ "Mode 52 is a 2 bits per pixel video mode allowing to use lots of "
+ "low-color graphics and sprites as the tiles are small (16 bytes "
+ "each). Lots of sprites, although not that many to make the plane "
+ "itself a sprite! It is background, just like how the dragon was "
+ "realized in Tanathos for the Commodore 64. Anyway, it looks "
+ "good, its nice to keep trusty old hardware running... Enjoy!";
+
+
+
+/*
+** Sprite text
+*/
+static const char sprite_text[] PROGMEM =
+ "                                                            "
+ "The Lisunov Li-2 was a Russian license-built version of the "
+ "famous Douglas DC-3 which revolutionized air transport in the "
+ "1930s and 1940s. The Russian variation was also produced in "
+ "great quantities during the war, and later saw extensive use by "
+ "Eastern-bloc countries until about the 1960s.             Today "
+ "even though there are many DC-3's still in regular operation, "
+ "only one of this variation exists in airworthy condition, the "
+ "HA-LIX, formerly a MALEV plane operating on domestic flights. "
+ "It was restored by the Hungarian Goldtimer Foundation between "
+ "1997 and 2002, and they fly it ever since along with their "
+ "other rare Hungarian aircraft.";
+
+
+
+/*
+** Sets background positions. x:y positions the main background, ovx:ovy the
+** overlay segment.
+*/
+static void setbg(u8 x, u8 y, u8 ovx, u8 ovy)
+{
+	u8 j;
+
+	rowsel[0] = y;
+	rowsel[1] = ovy;
+	rowsel[2] = 244U;
+	rowsel[3] = ovy + 12U;
+	rowsel[4] = 240U;
+	rowsel[5] = ovy + 16U;
+	rowsel[6] = ovy + 16U + y;
+	rowsel[7] = 255U;
+
+	for (j =  0U; j < 30U; j ++){
+		m52_rowdesc[j].vram = &(imgrows[j][0]) + (x >> 3);
+		m52_rowdesc[j].cfg0 = CFG0_PLANE | (x & 7U);
+	}
+
+	for (j = 30U; j < 32U; j ++){
+		m52_rowdesc[j].vram = &(extrows[j - 30U][0]) + (ovx >> 3);
+		m52_rowdesc[j].cfg0 = CFG0_EXT | (ovx & 7U);
+	}
+}
+
+
+
+/*
+** Outputs overlay scrolltext portion. X position 0 is off-screen to the
+** right, it scrolls towards the left as X increments. To complete proper
+** positioning, also call setbg() with the low 3 bits of X so it scrolls.
+*/
+static void ovr_gentext(u16 x)
+{
+	u8* vptr = &extrows[1][0];
+	u8  i;
+	u16 chx = x >> 3;
+	u16 sln = sizeof(ovr_text) - 1U;
+
+	chx -= 37U;
+
+	for (i = 0U; i < 37U; i ++){
+		if (chx < sln){
+			*vptr = (u8)(pgm_read_byte(&ovr_text[chx]));
+		}else{
+			*vptr = (u8)(' ');
+		}
+		vptr ++;
+		chx ++;
+	}
+}
+
+
+
+/*
+** Outputs sprite text. X position 0 is off-screen to the right, it scrolls
+** towards the left as X increments. Compensates for Y by rowsel[0]. Frame is
+** the wave animation's frame.
+*/
+static void sprite_gentext(u16 x, u16 frame)
+{
+	u16 i;
+	u16 sln = sizeof(sprite_text) - 1U;
+	u16 chx;
+	u8  y;
+	u8  chr;
+
+	x  -= 8U * 36U;
+	chx = 0U - x;
+
+	if ((chx & 0x8000U) != 0U){
+		i    = ((7U - chx) >> 3);
+		chx &= 7U;
+	}else{
+		i    = 0U;
+	}
+
+	for (; i < sln; i ++){
+
+		if (chx >= 312U){ break; } /* Gone off-screen */
+
+		y   = 36U + (sintb((frame - i) & 0xFFU) >> 1) + rowsel[0];
+		chr = pgm_read_byte(&sprite_text[i]);
+
+		if (chr > (u8)(' ')){ /* Optimization: Don't draw spaces */
+			M52_BlitSpriteRom(
+			    &fontdata[(u16)(chr) * 16U],
+			    chx,
+			    y,
+			    M52_SPR_I3 | M52_SPR_MASK);
+		}
+
+		chx += 8U;
+	}
+}
+
+
+
+/*
+** Animates plane propeller
+*/
+static void aniprop(u8 frame)
+{
+	u8* vptr;
+
+	frame = frame << 4;
+
+	vptr = &imgrows[PLANE_Y + 0U][PLANE_X];
+	vptr[13] = 78U + frame;
+	vptr = &imgrows[PLANE_Y + 1U][PLANE_X];
+	vptr[ 6] = 66U + frame;
+	vptr[ 7] = 67U + frame;
+	vptr[ 8] = 68U + frame;
+	vptr[12] = 79U + frame;
+	vptr[13] = 80U + frame;
+	vptr[14] = 81U + frame;
+	vptr = &imgrows[PLANE_Y + 2U][PLANE_X];
+	vptr[ 5] = 69U + frame;
+	vptr[ 6] = 70U + frame;
+	vptr[ 7] = 71U + frame;
+	vptr[ 8] = 72U + frame;
+	vptr = &imgrows[PLANE_Y + 3U][PLANE_X];
+	vptr[ 5] = 73U + frame;
+	vptr[ 6] = 74U + frame;
+	vptr = &imgrows[PLANE_Y + 4U][PLANE_X];
+	vptr[ 5] = 75U + frame;
+	vptr[ 6] = 76U + frame;
+	vptr[ 7] = 77U + frame;
+}
+
 
 
 int main(){
@@ -150,18 +366,21 @@ int main(){
 	m52_palette[6] = 0xF6U;
 	m52_palette[7] = 0xF6U;
 
-	u16 i = 0U;
-
 	m52_rowsel_p = &rowsel[0];
-	m52_ramt_base = 0xC0U;
+	m52_ramt_base = 0xB0U;
 	m52_col0_p = &color0[0];
-	M52_SetTileset(0U, tilestop, NULL);
-	M52_SetTileset(1U, tilesbot, NULL);
+	M52_SetTileset(0U, tilestop, plane_top_msk);
+	M52_SetTileset(1U, tilesbot, plane_bot_msk);
 	M52_SetTileset(2U, fontdata, NULL);
 	M52_LoadRowDesc(rows);
 	m52_sprite_work_p = &sprite_ws[0];
-	m52_sprite_ramt_base = 0xC0U;
-	m52_sprite_ramt_max = 64U;
+	m52_sprite_ramt_base = 0xB0U;
+	m52_sprite_ramt_max = 80U;
+	m52_mskpool_rom_p = tilesmsk;
+	m52_mskpool_ram_p = NULL;
+	m52_ramt_mski_p = &ramtmaskidx[0];
+
+	SetRenderingParameters(32U, 200U);
 
 	m52_config = M52_CFG_ENABLE | M52_CFG_COL0_PHY;
 
@@ -171,65 +390,78 @@ int main(){
 
 	for (u8 y = 0U; y < 30U; y ++){
 		for (u8 x = 0U; x < 40U; x ++){
-			m52_rowdesc[y].vram[x] = 99U;
+			m52_rowdesc[y].vram[x] = 101U;
 		}
 	}
 
 	for (u8 y = 0U; y < 9U; y ++){
-		for (u8 x = 0U; x < 29U; x ++){
-			m52_rowdesc[y + 10U].vram[x + 5U] = pgm_read_byte(&planemap[((uint16_t)(y) * 29U) + x]);
+		if (y > 4U){
+			m52_rowdesc[y + PLANE_Y].cfg1 |= M52_CFG1_ROMT_1;
+			for (u8 x = 0U; x < 40U; x ++){
+				m52_rowdesc[y + PLANE_Y].vram[x] = 71U;
+			}
 		}
-		if (y > 4U){ m52_rowdesc[y + 10U].cfg1 |= M52_CFG1_ROMT_1; }
+		for (u8 x = 0U; x < 29U; x ++){
+			m52_rowdesc[y + PLANE_Y].vram[x + PLANE_X] = pgm_read_byte(&planemap[((uint16_t)(y) * 29U) + x]);
+		}
 	}
 
-	for (u8 j = 0U; j < 26U; j ++){
-		m52_rowdesc[30U].vram[j] = 'a' + j;
-		m52_rowdesc[31U].vram[j] = 'A' + j;
+	for (u8 j = 0U; j < 37U; j ++){
+		extrows[0][j] = 127U;
+		extrows[1][j] = (u8)(' ');
 	}
 
 	M52_ResReset();
 
+	u16 frame = 0U;
+	u16 xpos  = 0U;
+	u16 ypos  = 0U;
+	u8  xyvr  = 0U;
+	u8  prop  = 0U;
+	u8  ovxm;
+	u8  vsync;
+
 	while(1){
-		i ++;
-		WaitVsync(2);
+
+		/* Logic determining placement of objects */
+
+		frame ++;
+		xyvr = (xyvr + 1U) & 0xFFU;
+		xpos = xpos + 229U - (sintb(xyvr) >> 2);
+		ypos = ypos + 241U - (costb(xyvr) >> 2);
+		prop ++;
+		if (prop >= 3U){ prop -= 3U; }
+
+		/* Frame skipping if necessary (many sprites may require it
+		** occasionally) */
+
+		vsync = GetVsyncFlag(); /* Already passed next frame? */
+		WaitVsync(1);
+		if (vsync){ continue; } /* If so, then don't render */
 
 		M52_VramRestore();
 
-		rowsel[1] = i & 0xFFU;
-		rowsel[2] = 240U;
-		rowsel[3] = (i + 16U) & 0xFFU;
-		rowsel[4] = (i + 16U) & 0xFFU;
-		rowsel[5] = 255U;
+		ovr_gentext(frame & 0xFFFU); /* 512 chars * 8 pixels wrap */
 
-		for (u8 j = 0U; j < 28U; j ++){
-			u8 sh = (i >> 2) & 0x3FU;
-			if ((sh & 0x20U) != 0U){ sh = 0x3FU - sh; }
-			m52_rowdesc[j].vram = &(imgrows[j][0]) + (sh >> 3);
-			m52_rowdesc[j].cfg0 = CFG0_PLANE | (sh & 7U);
-		}
+		ovxm = (frame >> 7) & 7U;
+		if      (ovxm == 0U){ ovxm =  36U; }
+		else if (ovxm == 1U){ ovxm =  48U; }
+		else if (ovxm == 2U){ ovxm =  40U; }
+		else if (ovxm == 3U){ ovxm =  52U; }
+		else if (ovxm == 4U){ ovxm = 160U; }
+		else if (ovxm == 5U){ ovxm =  56U; }
+		else if (ovxm == 6U){ ovxm =  32U; }
+		else                { ovxm =  48U; }
 
-		for (u8 j = 0U; j < 26U; j ++){
-			M52_BlitSpriteRom(&fontdata[(uint16_t)('a' + j) * 16U],
-			    (20U + (i >> 1) + (j * 13U)) & 0x1FFU,
-			    ((i >> 1) & 0xFFU) + (j << 1),
-			    M52_SPR_I3);
-		}
+		setbg(
+		    (sintb((xpos >> 8) & 0xFFU) >> 3),
+		    (costb((ypos >> 8) & 0xFFU) >> 4) + 12U, /* 200 lines tall, not 224 */
+		    frame & 7U,
+		    184U - (((u16)(costb(((frame << 1) + 128U) & 0xFFU)) * ovxm) >> 8) );
 
-//		for (uint8_t y = 0U; y < 8U; y++){
-//			for (uint8_t x = 0U; x < 8U; x++){
-//				M52_PutPixel((i >> 6) & 3U, 128U + x, 64U + y, M52_SPR_I1);
-//			}
-//		}
+		aniprop(prop);
 
-//		for (uint8_t j = 0U; j < 100U; j++){
-//			M52_PutPixel((i >> 6) & 3U, 64U + j /*+ ((i >> 4) & 0xFU)*/, j, M52_SPR_I1);
-//		}
-
-//		M52_PutPixel((i >> 6) & 3U,  0U, 0U, M52_SPR_I1);
-//		M52_PutPixel((i >> 6) & 3U,  8U, 0U, M52_SPR_I1);
-//		M52_PutPixel((i >> 6) & 3U, 16U, 0U, M52_SPR_I1);
-//		M52_PutPixel((i >> 6) & 3U, 24U, 0U, M52_SPR_I1);
-//		M52_PutPixel((i >> 6) & 3U, 32U, 0U, M52_SPR_I1);
+		sprite_gentext(frame & 0x1FFFU, frame); /* 1024 chars * 8 pixels wrap */
 
 	}
 

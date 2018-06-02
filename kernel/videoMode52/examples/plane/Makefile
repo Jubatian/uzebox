@@ -3,8 +3,8 @@
 ###############################################################################
 
 ## General Flags
-PROJECT = m52plane
-GAME    = m52plane
+PROJECT = li2demo
+GAME    = li2demo
 INFO    = gameinfo.properties
 MCU     = atmega644
 TARGET  = $(GAME).elf
@@ -17,12 +17,8 @@ DIRS    = $(OUTDIR) $(OBJDIR) $(DEPDIR)
 ## Kernel settings
 KERNEL_DIR = ../../..
 KERNEL_OPTIONS  = -DVIDEO_MODE=52 -DSOUND_MIXER=MIXER_TYPE_INLINE -DSOUND_CHANNEL_5_ENABLE=0
-#KERNEL_OPTIONS += -DM52_ENABLE_ATTR0=1
-#KERNEL_OPTIONS += -DM52_ENABLE_ATTR123=1
-#KERNEL_OPTIONS += -DM52_ENABLE_ATTR23M=1
 KERNEL_OPTIONS += -DSPRITES_ENABLED=1
 KERNEL_OPTIONS += -DM52_TILES_MAX_H=36
-
 
 ## Packrom (.uze)
 PACKROM_DIR = ../../../../tools/packrom
