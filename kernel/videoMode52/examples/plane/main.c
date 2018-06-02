@@ -354,64 +354,65 @@ static void aniprop(u8 frame)
 
 
 
-int main(){
+/*
+** Generates background image (plane) by filling the VRAM
+*/
+static void initbg(void)
+{
+	u8 y;
+	u8 x;
 
-	m52_palette[0] = 0x00U;
-	m52_palette[1] = 0x52U;
-	m52_palette[2] = 0xA4U;
-	m52_palette[3] = 0xB6U;
-
-	m52_palette[4] = 0x00U;
-	m52_palette[5] = 0x5CU;
-	m52_palette[6] = 0xF6U;
-	m52_palette[7] = 0xF6U;
-
-	m52_rowsel_p = &rowsel[0];
-	m52_ramt_base = 0xB0U;
-	m52_col0_p = &color0[0];
-	M52_SetTileset(0U, tilestop, plane_top_msk);
-	M52_SetTileset(1U, tilesbot, plane_bot_msk);
-	M52_SetTileset(2U, fontdata, NULL);
-	M52_LoadRowDesc(rows);
-	m52_sprite_work_p = &sprite_ws[0];
-	m52_sprite_ramt_base = 0xB0U;
-	m52_sprite_ramt_max = 80U;
-	m52_mskpool_rom_p = tilesmsk;
-	m52_mskpool_ram_p = NULL;
-	m52_ramt_mski_p = &ramtmaskidx[0];
-
-	SetRenderingParameters(32U, 200U);
-
-	m52_config = M52_CFG_ENABLE | M52_CFG_COL0_PHY;
-
-	for (u8 col = 0U; col < 224U; col ++){
-		color0[col] = pgm_read_byte(&color0_data[col]);
-	}
-
-	for (u8 y = 0U; y < 30U; y ++){
-		for (u8 x = 0U; x < 40U; x ++){
-			m52_rowdesc[y].vram[x] = 101U;
+	for (y = 0U; y < 30U; y ++){ /* Clear VRAM */
+		for (x = 0U; x < 40U; x ++){
+			m52_rowdesc[y].vram[x] = 101U; /* Blank tile in tilestop (loaded as tileset 0) */
 		}
 	}
 
-	for (u8 y = 0U; y < 9U; y ++){
-		if (y > 4U){
+	for (y = 0U; y < 9U; y ++){ /* Fill in plane graphics */
+		if (y > 4U){ /* Has to use tilesbot (loaded as tileset 1), blank tile is 71 */
 			m52_rowdesc[y + PLANE_Y].cfg1 |= M52_CFG1_ROMT_1;
-			for (u8 x = 0U; x < 40U; x ++){
+			for (x = 0U; x < 40U; x ++){
 				m52_rowdesc[y + PLANE_Y].vram[x] = 71U;
 			}
 		}
-		for (u8 x = 0U; x < 29U; x ++){
+		for (x = 0U; x < 29U; x ++){
 			m52_rowdesc[y + PLANE_Y].vram[x + PLANE_X] = pgm_read_byte(&planemap[((uint16_t)(y) * 29U) + x]);
 		}
 	}
+}
 
-	for (u8 j = 0U; j < 37U; j ++){
-		extrows[0][j] = 127U;
-		extrows[1][j] = (u8)(' ');
+
+
+/*
+** Initializes overlay area (black bg. scrolltext)
+*/
+static void initovr(void)
+{
+	u8 x;
+
+	for (x = 0U; x < 37U; x ++){
+		extrows[0][x] = 127U; /* Top & Bottom border tile */
+		extrows[1][x] = (u8)(' ');
 	}
+}
 
-	M52_ResReset();
+
+
+/*
+** Initializes sky (color 0 replacements)
+*/
+static void initsky(void)
+{
+	u8 y;
+
+	for (y = 0U; y < 200U; y ++){
+		color0[y] = pgm_read_byte(&color0_data[y]);
+	}
+}
+
+
+
+int main(){
 
 	u16 frame = 0U;
 	u16 xpos  = 0U;
@@ -420,6 +421,94 @@ int main(){
 	u8  prop  = 0U;
 	u8  ovxm;
 	u8  vsync;
+
+	/* Palette 0: The plane (color index 0 is not used, replaced by sky) */
+
+	m52_palette[0] = 0x00U;
+	m52_palette[1] = 0x52U;
+	m52_palette[2] = 0xA4U;
+	m52_palette[3] = 0xB6U;
+
+	/* Palette 1: Black scrolltext */
+
+	m52_palette[4] = 0x00U;
+	m52_palette[5] = 0x5CU;
+	m52_palette[6] = 0xF6U;
+	m52_palette[7] = 0xF6U;
+
+	/* Row selector controlling horizontal split regions */
+
+	m52_rowsel_p = &rowsel[0];
+
+	/* RAM tile split point: Above this, indices in VRAM are RAM tiles,
+	** below, ROM tiles. Note that a RAM tile's absolute address is simply
+	** tile_index * 16. */
+
+	m52_ramt_base = 0xB0U;
+
+	/* Color 0 replacement table. If enabled for the row, Color 0 for
+	** every scanline will be taken from this table instead of the
+	** palette's Color index 0. */
+
+	m52_col0_p = &color0[0];
+
+	/* Set up tilesets and their masks. Tilesets 0 and 1 are the plane
+	** (which has masks so sprites can appear behind), Tileset 2 is used
+	** for the black scrolltext. */
+
+	M52_SetTileset(0U, tilestop, plane_top_msk);
+	M52_SetTileset(1U, tilesbot, plane_bot_msk);
+	M52_SetTileset(2U, fontdata, NULL);
+
+	/* Load row descriptors into m52_rowdesc. This determines the
+	** configuration of the available 32 tile rows (while the row selector
+	** controls where each of them displays). */
+
+	M52_LoadRowDesc(rows);
+
+	/* Set up sprite workspace. This requires 3 bytes for each RAM tile
+	** allocated to the sprite blitter. */
+
+	m52_sprite_work_p = &sprite_ws[0];
+
+	/* Set up RAM tile region used by the sprite blitter. It can be
+	** anywhere within the RAM tiles. */
+
+	m52_sprite_ramt_base = 0xB0U;
+	m52_sprite_ramt_max = 80U;
+
+	/* Set up mask pools, that is, the 8 byte mask images for the tiles,
+	** which are used by the mask index tables set up with
+	** M52_SetTileset(). RAM mask images may be useful if you have user
+	** RAM tiles. */
+
+	m52_mskpool_rom_p = tilesmsk;
+	m52_mskpool_ram_p = NULL;
+
+	/* Set up a mask index table for the RAM tiles. This is as many bytes
+	** as many RAM tiles you are using (usually 256 - m52_ramt_base). It
+	** is not mandatory, but masked sprites won't work properly without
+	** this area. */
+
+	m52_ramt_mski_p = &ramtmaskidx[0];
+
+	/* Use a 200 lines tall screen. If you have many sprites, you need a
+	** narrower screen to have time to draw all of them. */
+
+	SetRenderingParameters(32U, 200U);
+
+	/* Enable display, along with setting color replacements by physical
+	** scanline. By default the color0 and color1 replacement tables are
+	** indexed by logical scanline, that is, by the order of rows in the
+	** row descriptor. */
+
+	m52_config = M52_CFG_ENABLE | M52_CFG_COLREP_PHY;
+
+	initsky();
+	initbg();
+	initovr();
+
+	M52_ResReset();
 
 	while(1){
 

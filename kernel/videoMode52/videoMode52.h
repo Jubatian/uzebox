@@ -126,6 +126,7 @@ void M52_PutPixel(u8 col, u16 xl, u8 yl, u8 flg);
 */
 #define M52_CFG_ENABLE           0x01U
 #define M52_CFG_COL0_PHY         0x04U
+#define M52_CFG_COLREP_PHY       0x04U
 
 /*
 ** Row descriptor cfg0 flags (X shift is on bits 0-2).
