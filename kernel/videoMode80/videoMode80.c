@@ -28,6 +28,11 @@
 	void InitializeVideoMode(){
 
 		SetFontTilesIndex(0x20);
+		m80_bgclist = NULL; /* Simple start, all features disabled */
+		m80_fgclist = NULL; /* User may use them at will or never care */
+		m80_dlist   = NULL;
+		m80_rompal  = NULL;
+		m80_rampal  = NULL;
 
 	}
 

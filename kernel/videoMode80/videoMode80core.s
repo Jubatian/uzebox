@@ -25,154 +25,16 @@
 ; Real-time code generated tile data
 ;
 ; 80 tiles width (17 cycles / tile)
-; 16 colors, option for using up to 2 vertical palette reloads
+; Up to 16 colors, first 2 colors have option for in-line swaps
 ; Tiles have fixed colors selected from the 16 of the palette
-; Tile size: 112 bytes (at 8 pixels tile height)
 ; No scrolling
 ; No sprites
 ;
 ;=============================================================================
 ;
-; The mode needs a code tileset and palette source provided by the user.
-;
-; The following global symbols are required:
-;
-; m90_defpalette:
-;     16 bytes at arbitrary location in ROM, defining the default palette.
-;     This palette is loaded upon initialization into palette.
-;
-; m90_deftilerows:
-;     An array of entry jumps (2 words each) for each tile row in ROM. Its
-;     size depends on the tile height (TILE_HEIGHT). This address is loaded
-;     upon initialization for rendering tile rows. Note: Jumps are used
-;     instead of entry points since it is impossible to make the assembler
-;     emit addresses in ".byte" directives.
-;
-; The tile row generator should work within the following constraints:
-;
-; Inputs:
-; X:   Points at first tile to render in VRAM
-; r2:  Color 0 of palette
-; ...
-; r17: Color 15 of palette
-;
-; Entry happens at cycle 277 (the first instruction: the entry jump begins at
-; this cycle). Exit must happen at cycle 1758 (after the "ret").
-; In total (including the "jmp" and "ret") the code must use 1481 cycles.
-;
-; The palette registers have to be preserved.
-;
-; It should produce 60 tiles, then blank the output.
-;
-; Technically anything is doable there, however a normal Mode 90 output should
-; work as follows:
-;
-; r18: Loaded with 60, counts the tiles to render.
-; r19: Loaded with 7, used as a multiplier to get the tile data.
-; r20: Loaded with the low byte of the base of the tile data blocks.
-; r21: Loaded with the high byte of the base of the tile data blocks.
-;
-; 17 cycles wide tiles are chosen to break sync with Colorburst (which is 8
-; cycles), while still allowing 80 tiles (a little wider than CGA 80 column
-; mode this way).
-;
-; Code tiles are 17 cycles wide with up to 6 pixel outputs. There is a tile
-; generator producing them, in principle, they have the following body for
-; example (this is a nice generic layout for typical characters):
-;
-; row_x_tile_xx:
-;	out   PIXOUT,  r6/r7   ; 3cy
-;	rjmp  .                ; Used to reduce size by common tails
-;	out   PIXOUT,  r6/r7   ; 3cy
-;	movw  ZL,      r0
-;	nop                    ; Could go anywhere (or 7th pixel)
-;	out   PIXOUT,  r6/r7   ; 3cy
-;	ld    r5,      X+
-;	out   PIXOUT,  r6/r7   ; 2cy
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	out   PIXOUT,  r6/r7   ; 3cy
-;	mul   r5,      r4      ; r4: Codeblock size
-;	out   PIXOUT,  r6/r7   ; 3cy (always, inter-character gap)
-;	ijmp
-;
-; Permissible orders of key instructions (there may be less than 6 pixel
-; outputs, first "out" must always be present to terminate previous tile in
-; case it ended with a Foreground pixel):
-;
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	movw  ZL,      r0
-;	ld    r5,      X+      ; (2)
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	ld    r5,      X+      ; (2)
-;	movw  ZL,      r0
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	ld    r5,      X+      ; (2)
-;	movw  ZL,      r0
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	movw  ZL,      r0
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	ld    r5,      X+      ; (2)
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;
-;	movw  ZL,      r0
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	ld    r5,      X+      ; (2)
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;
-;	movw  ZL,      r0
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;	ld    r5,      X+      ; (2)
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	movw  ZL,      r0
-;	ld    r5,      X+      ; (2)
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;
-;	movw  ZL,      r0
-;	rjmp  .                ; (2) Used to reduce size by common tails
-;	ld    r5,      X+      ; (2)
-;	mul   r5,      r4      ; (2) r4: Codeblock size
-;	subi  ZH,      hi8(-(pm(row_x_tile_00)))
-;
-; Instruction cycles sequences by this:
-;
-; 21212
-; 22112
-; 22121
-; 21122
-; 12212
-; 12122
-; 21221
-; 12221
-;
-; Permissible begin sequences of tiles (to control codeblock size):
-;
-;	out   PIXOUT,  r5/r6   ; 3cy
-;	rjmp  .
-;
-;	out   PIXOUT,  r5/r6   ; 1cy
-;	out   PIXOUT,  r5/r6   ; 3cy
-;	rjmp  .
-;
-;	out   PIXOUT,  r5/r6   ; 2cy
-;	movw  ZL,      r0
-;	out   PIXOUT,  r5/r6   ; 3cy
-;	rjmp  .
-;
-; One row this way takes 2K minimum (excluding tails)
+; For description on how the scanline core works, look into the generator
+; (generators/tilegen.c). It describes how it works and how it would be
+; assembled normally.
 ;
 ;=============================================================================
 
@@ -183,6 +45,44 @@
 ; The Video RAM. Its size depends on the configuration in VideoMode80.def.h.
 ;
 .global vram
+
+;
+; unsigned char* m80_bgclist;
+;
+; Background color list. If non-NULL, on every line, the background color is
+; reloaded from this list.
+;
+.global m80_bgclist
+
+;
+; unsigned char* m80_fgclist;
+;
+; Foreground color list. If non-NULL, on every line, the foreground color is
+; reloaded from this list (foreground color is color 1).
+;
+.global m80_fgclist
+
+;
+; unsigned char const* m80_rompal;
+;
+; ROM palette. If non-NULL, 16 colors are loaded from this at frame start.
+;
+.global m80_rompal
+
+;
+; unsigned char* m80_rampal;
+;
+; RAM palette. If non-NULL, 16 colors are loaded from this at frame start.
+; Higher priority than m80_rompal (so could be used for temporary override)
+;
+.global m80_rampal
+
+;
+; m80_dlist_tdef* m80_dlist;
+;
+; Display list providing screen split and vertical scrolling options.
+;
+.global m80_dlist
 
 ;
 ; void ClearVram(void);
@@ -238,6 +138,11 @@
 	; Globals
 
 	vram:          .space VRAM_SIZE
+	m80_bgclist:   .space 2
+	m80_fgclist:   .space 2
+	m80_dlist:     .space 2
+	m80_rompal:    .space 2
+	m80_rampal:    .space 2
 
 	; Locals
 
@@ -247,6 +152,14 @@
 
 
 
+;
+; Default palette
+;
+m80_defpal:
+	.byte 0x00, 0xFF, 0xC0, 0x38, 0xF8, 0x07, 0xC7, 0x3F
+	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+
 
 ;
 ; Video frame renderer
@@ -254,17 +167,17 @@
 ; Register usage:
 ;
 ;  r1: r0: Temporaries, used within scanline code for multiplication
-;  r2-r17: Palette colors, r8: Background
+;  r2-r17: Palette colors, r2: Background
 ;     r18: Temporary, used to load tile in scanline loop
 ;     r19: Contains current row code block high word
 ;     r20: Set to 4, size of code blocks in scanline loop
 ;     r21: Zero pixel for terminating the line
 ;     r22: Line counter
-;     r23:
+;     r23: Display list next scanline match
 ;     r24: Tile row counter
 ;     r25: Line within tile row counter
 ;       X: Used to read VRAM
-;       Y:
+;       Y: Display list address
 ;       Z: Used for jumps within scanline code
 ;
 
@@ -274,16 +187,72 @@ sub_video_mode80:
 ; Entry happens in cycle 467.
 ;
 
-	; Prepare some reasonable test stuff
+	; Prepare palette. Start off with defaults, override if palette
+	; sources exist.
 
-	ldi   ZL,      0       ; Colors
-	mov   r2,      ZL
-	ldi   ZL,      0xFF
-	mov   r3,      ZL
+	lds   ZL,      m80_rompal + 0
+	lds   ZH,      m80_rompal + 1
+	ldi   YL,      lo8(m80_defpal)
+	ldi   YH,      hi8(m80_defpal)
+	cpi   ZH,      0
+	brne  .+2
+	movw  ZL,      YL
+	lpm   r2,      Z+
+	lpm   r3,      Z+
+	lpm   r4,      Z+
+	lpm   r5,      Z+
+	lpm   r6,      Z+
+	lpm   r7,      Z+
+	lpm   r8,      Z+
+	lpm   r9,      Z+
+	lpm   r10,     Z+
+	lpm   r11,     Z+
+	lpm   r12,     Z+
+	lpm   r13,     Z+
+	lpm   r14,     Z+
+	lpm   r15,     Z+
+	lpm   r16,     Z+
+	lpm   r17,     Z+
+	lds   ZL,      m80_rampal + 0
+	lds   ZH,      m80_rampal + 1
+	cpi   ZH,      0
+	brne  .+10
+	ldi   ZL,      10
+	dec   ZL
+	brne  .-4
+	nop
+	rjmp  .+32
+	ld    r2,      Z+
+	ld    r3,      Z+
+	ld    r4,      Z+
+	ld    r5,      Z+
+	ld    r6,      Z+
+	ld    r7,      Z+
+	ld    r8,      Z+
+	ld    r9,      Z+
+	ld    r10,     Z+
+	ld    r11,     Z+
+	ld    r12,     Z+
+	ld    r13,     Z+
+	ld    r14,     Z+
+	ld    r15,     Z+
+	ld    r16,     Z+
+	ld    r17,     Z+
+
+	; Prepare display list if any
+
+	lds   YL,      m80_dlist + 0
+	lds   YH,      m80_dlist + 1
+	ldi   r23,     0       ; Display list next: Start
+	cpi   YH,      0
+	brne  .+2
+	ldi   r23,     0xFF    ; Display list next: Never
+
+	; Prepare counters
 
 	ldi   r22,     0       ; Line Counter
-	ldi   r24,     0       ; Tile Row counter
-	ldi   r25,     0       ; Line within Tile Row counter
+	ldi   r24,     0       ; Tile Row counter (if no Display List)
+	ldi   r25,     0       ; Line within Tile Row counter (if no Display List)
 
 	; Prepare for Timer 1 use in the scanline loop for line termination
 
@@ -303,8 +272,19 @@ sub_video_mode80:
 
 	; Wait until next line
 
-	WAIT  r18,     1322
+	WAIT  r18,     1184
 	rjmp  scl_0
+
+scl_nd:
+
+	; No Display List processing filler
+
+	lpm   ZL,      Z
+	lpm   ZL,      Z
+	lpm   ZL,      Z
+	rjmp  .
+	rjmp  .
+	rjmp  scl_de
 
 	; Scanline loop entry by Timer1 termination
 
@@ -318,11 +298,48 @@ TIMER1_OVF_vect:
 
 	; Tail wait
 
-	WAIT  ZL,      ((((86 - SCREEN_TILES_H) * TILE_WIDTH) + 0) / 2) + 46
+	WAIT  ZL,      ((((86 - SCREEN_TILES_H) * TILE_WIDTH) + 0) / 2) + 5
 
 	; Entry point from lead-in
 
 scl_0:
+
+	; Display list processing when needed
+
+	cp    r23,     r22
+	brne  scl_nd
+	ld    r24,     Y+      ; VRAM row to begin with
+	cpi   r24,     VRAM_TILES_V
+	brcs  .+2
+	ldi   r24,     0
+	ld    r25,     Y+      ; Tile row (within VRAM row) to begin at
+	cpi   r25,     TILE_HEIGHT
+	brcs  .+2
+	ldi   r25,     0
+	ld    r2,      Y+      ; Background color
+	ld    r3,      Y+      ; Foreground color
+	ld    r23,     Y+      ; (18 cycles) Next scanline to match
+scl_de:
+
+	; Background color from list if any
+
+	lds   ZL,      m80_bgclist + 0
+	lds   ZH,      m80_bgclist + 1
+	add   ZL,      r22
+	adc   ZH,      r21     ; r21: zero. If ptr. was NULL, ZH remains zero
+	breq  .
+	breq  .+2
+	ld    r2,      Z       ; (10 cycles)
+
+	; Foreground color from list if any
+
+	lds   ZL,      m80_fgclist + 0
+	lds   ZH,      m80_fgclist + 1
+	add   ZL,      r22
+	adc   ZH,      r21     ; r21: zero. If ptr. was NULL, ZH remains zero
+	breq  .
+	breq  .+2
+	ld    r3,      Z       ; (10 cycles)
 
 	; Check end of line
 
@@ -361,6 +378,9 @@ scl_0:
 	ldi   r25,     0
 	brne  .+2
 	inc   r24              ; Increment tile row when passed previous
+	cpi   r24,     VRAM_TILES_V
+	brcs  .+2
+	ldi   r24,     0
 	inc   r22              ; Increment line counter
 
 	; Prepare timer

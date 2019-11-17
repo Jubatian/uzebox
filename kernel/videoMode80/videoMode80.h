@@ -28,9 +28,24 @@
 
 #include <avr/io.h>
 
+/* Display list entry structure */
+
+typedef struct{
+ unsigned char  vramrow; /* VRAM row to begin at */
+ unsigned char  tilerow; /* Tile row (within VRAM row) to begin at */
+ unsigned char  bgc;     /* Background color */
+ unsigned char  fgc;     /* Foreground color */
+ unsigned char  next;    /* Next scanline to match, Unreachable: End */
+}m80_dlist_tdef;
+
 /* Provided by VideoMode80.s */
 
-extern unsigned char  vram[];
+extern unsigned char    vram[];
+extern unsigned char*   m80_bgclist;
+extern unsigned char*   m80_fgclist;
+extern m80_dlist_tdef*  m80_dlist;
+extern unsigned const char* m80_rompal;
+extern unsigned char*   m80_rampal;
 
 /* Supplementary functions to complement the Uzebox kernel's set */
 
