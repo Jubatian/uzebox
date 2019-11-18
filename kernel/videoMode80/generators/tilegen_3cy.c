@@ -1,5 +1,6 @@
 /*
-**  Converts GIMP header to Uzebox Mode 80 tiles assembly source.
+**  Converts GIMP header to Uzebox Mode 80 tiles assembly source. Optimized
+**  for 3 cycles wide pixels (Mode 9 substitute).
 **
 **  By Sandor Zsuga (Jubatian)
 **
@@ -35,7 +36,7 @@
 
 
 /*  The GIMP header to use */
-#include "tileset.h"
+#include "tileset_3cy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -43,7 +44,7 @@
 
 
 /* Number of cycles per tile */
-#define TILE_CYCLES    17U
+#define TILE_CYCLES    18U
 /* Height of tiles in pixels */
 #define TILE_HEIGHT     8U
 
@@ -63,56 +64,8 @@ static const uint8_t pre_jt[TILE_HEIGHT] = {0};
 **
 ** Second pass: Generate heads.
 **
-** The heads are tested in the following order (extra color outputs are not
-** added to make something fit, so color outs must match exactly):
-**
-**	out   PIXOUT,  r8/...  ; 3cy
-**	ld    r18,     X+
-**	out   PIXOUT,  r8/...  ; 3+cy
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 2cy
-**	movw  ZL,      r0
-**	out   PIXOUT,  r8/...  ; 3+cy
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 6+cy
-**	movw  ZL,      r0
-**	ld    r18,     X+
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 5cy
-**	ld    r18,     X+
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 4cy
-**	movw  ZL,      r0
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 1cy
-**	out   PIXOUT,  r8/...  ; 5+cy
-**	ld    r5,      X+
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 1cy
-**	out   PIXOUT,  r8/...  ; 4cy
-**	movw  ZL,      r0
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 1cy
-**	out   PIXOUT,  r8/...  ; 1cy
-**	out   PIXOUT,  r8/...  ; 3cy
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 1cy
-**	out   PIXOUT,  r8/...  ; 3cy
-**	rjmp  .
-**
-**	out   PIXOUT,  r8/...  ; 3cy
-**	rjmp  .
-**
-** If the head can not be generated for a row, halt with appropriate error (so
-** the image may be fixed).
+** This is a simple pass as 3 cycles wide pixels can always use 2 instruction
+** word headers (pixel output + jump).
 **
 ** Third pass: Generate tails.
 **
@@ -187,40 +140,22 @@ static const uint8_t pre_jt[TILE_HEIGHT] = {0};
 #define ESS_SEQS_CNT    5U
 
 /* Number of head sequences */
-#define HEAD_SEQS_CNT  10U
+#define HEAD_SEQS_CNT   1U
 
 /* Size of header instruction blocks in words */
-#define HEAD_BLK_SIZE   4U
+#define HEAD_BLK_SIZE   2U
 
 /* Head match length */
-#define HEAD_SEQ_LEN    6U
+#define HEAD_SEQ_LEN    3U
 
 /* Head generation masks: '0' positions must be color, '1' positions must be unfilled to match */
 static uint8_t const head_seqs[HEAD_SEQS_CNT][HEAD_SEQ_LEN] = {
- {0, 1, 1, 0, 1, 1},
- {0, 1, 0, 1, 1, 2},
- {0, 1, 1, 1, 1, 1},
- {0, 1, 1, 1, 1, 2},
- {0, 1, 1, 1, 2, 2},
- {0, 0, 1, 1, 1, 1},
- {0, 0, 1, 1, 1, 2},
- {0, 0, 0, 1, 1, 2},
- {0, 0, 1, 1, 2, 2},
- {0, 1, 1, 2, 2, 2},
+ {0, 1, 1}
 };
 
 /* Head code to add (to '1' positions if matched) */
 static uint8_t const head_code[HEAD_SEQS_CNT][HEAD_SEQ_LEN] = {
- {0, INS_LD0,   INS_LD1,   0,         INS_RJMP0, INS_RJMP1},
- {0, INS_MOVW,  0,         INS_RJMP0, INS_RJMP1, 0        },
- {0, INS_MOVW,  INS_LD0,   INS_LD1,   INS_RJMP0, INS_RJMP1},
- {0, INS_LD0,   INS_LD1,   INS_RJMP0, INS_RJMP1, 0        },
- {0, INS_MOVW,  INS_RJMP0, INS_RJMP1, 0        , 0        },
- {0, 0,         INS_LD0,   INS_LD1,   INS_RJMP0, INS_RJMP1},
- {0, 0,         INS_MOVW,  INS_RJMP0, INS_RJMP1, 0        },
- {0, 0,         0,         INS_RJMP0, INS_RJMP1, 0        },
- {0, 0,         INS_RJMP0, INS_RJMP1, 0,         0        },
- {0, INS_RJMP0, INS_RJMP1, 0,         0,         0        }
+ {0, INS_RJMP0, INS_RJMP1}
 };
 
 /* Essential instruction sequences to try in Tail generation */

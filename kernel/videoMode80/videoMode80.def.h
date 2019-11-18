@@ -38,7 +38,7 @@
 	#define TILE_HEIGHT 8
 #endif
 
-#define TILE_WIDTH 17
+#define TILE_WIDTH 8
 
 #ifndef SCREEN_TILES_H
 	#define SCREEN_TILES_H 80

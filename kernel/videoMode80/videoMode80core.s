@@ -132,6 +132,13 @@
 .global SetFontTilesIndex
 
 
+;
+; Character set to use. Later will receive some better solution for adding.
+;
+#include "m80_cp437.s"
+;#include "m80_mode9.s"
+
+
 
 .section .bss
 
@@ -268,7 +275,7 @@ sub_video_mode80:
 	; Prepare constants
 
 	ldi   r21,     0       ; Line terminating zero pixel
-	ldi   r20,     4       ; Size of code blocks (heads)
+	ldi   r20,     M80_CODEBLOCK_SIZE ; Size of code blocks (heads)
 
 	; Wait until next line
 
@@ -291,14 +298,14 @@ scl_nd:
 .global TIMER1_OVF_vect
 TIMER1_OVF_vect:
 
-	out   _SFR_IO_ADDR(PORTC), r21 ; Zero pixel terminating the line
+	out   PIXOUT,  r21     ; Zero pixel terminating the line
 
 	pop   r0               ; pop & discard OVF interrupt return address
 	pop   r0               ; pop & discard OVF interrupt return address
 
 	; Tail wait
 
-	WAIT  ZL,      (((1462 - (TILE_WIDTH * SCREEN_TILES_H)) + 0) / 2) + 5
+	WAIT  ZL,      (((1462 - (M80_TILE_CYCLES * SCREEN_TILES_H)) + 0) / 2) + 5
 
 	; Entry point from lead-in
 
@@ -354,7 +361,7 @@ scl_de:
 	; The hsync_pulse routine clobbers r0, r1, Z and the T flag.
 
 	rcall hsync_pulse      ; (21 + AUDIO)
-	WAIT  ZL,      (((1462 - (TILE_WIDTH * SCREEN_TILES_H)) + 1) / 2) + (HSYNC_USABLE_CYCLES - AUDIO_OUT_HSYNC_CYCLES)
+	WAIT  ZL,      (((1462 - (M80_TILE_CYCLES * SCREEN_TILES_H)) + 1) / 2) + (HSYNC_USABLE_CYCLES - AUDIO_OUT_HSYNC_CYCLES)
 
 	; Enter code tile row
 
@@ -385,8 +392,8 @@ scl_de:
 
 	; Prepare timer
 
-	ldi   ZL,      lo8(0x10000 - ((TILE_WIDTH * SCREEN_TILES_H) + 10))
-	ldi   ZH,      hi8(0x10000 - ((TILE_WIDTH * SCREEN_TILES_H) + 10))
+	ldi   ZL,      lo8(0x10000 - ((M80_TILE_CYCLES * SCREEN_TILES_H) + 10))
+	ldi   ZH,      hi8(0x10000 - ((M80_TILE_CYCLES * SCREEN_TILES_H) + 10))
 	sts   _SFR_MEM_ADDR(TCNT1H), ZH
 	sts   _SFR_MEM_ADDR(TCNT1L), ZL
 	sei
@@ -588,7 +595,3 @@ SetFontTilesIndex:
 
 	sts   v_fbase, r24
 	ret
-
-
-
-#include "m80_cp437.s"
