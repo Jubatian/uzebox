@@ -298,7 +298,7 @@ TIMER1_OVF_vect:
 
 	; Tail wait
 
-	WAIT  ZL,      ((((86 - SCREEN_TILES_H) * TILE_WIDTH) + 0) / 2) + 5
+	WAIT  ZL,      (((1462 - (TILE_WIDTH * SCREEN_TILES_H)) + 0) / 2) + 5
 
 	; Entry point from lead-in
 
@@ -354,7 +354,7 @@ scl_de:
 	; The hsync_pulse routine clobbers r0, r1, Z and the T flag.
 
 	rcall hsync_pulse      ; (21 + AUDIO)
-	WAIT  ZL,      ((((86 - SCREEN_TILES_H) * TILE_WIDTH) + 1) / 2) + (HSYNC_USABLE_CYCLES - AUDIO_OUT_HSYNC_CYCLES)
+	WAIT  ZL,      (((1462 - (TILE_WIDTH * SCREEN_TILES_H)) + 1) / 2) + (HSYNC_USABLE_CYCLES - AUDIO_OUT_HSYNC_CYCLES)
 
 	; Enter code tile row
 
@@ -362,7 +362,7 @@ scl_de:
 
 	ldi   XL,      lo8(vram)
 	ldi   XH,      hi8(vram)
-	ldi   ZL,      SCREEN_TILES_H
+	ldi   ZL,      VRAM_TILES_H
 	mul   ZL,      r24
 	add   XL,      r0
 	adc   XH,      r1      ; VRAM begin address to read
