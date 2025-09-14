@@ -61,8 +61,9 @@
 	extern void SetFont(char x,char y, unsigned char tileId);
 	extern void SetFontTilesIndex(unsigned char index);
 	extern void SetFontTable(const char *data);
-	extern void SetTileTable(const char *data);	
-	extern void DrawMap(unsigned char x,unsigned char y,const VRAM_PTR_TYPE *map); 	
+	extern void SetTileTable(const char *data);
+	extern void DrawMap(unsigned char x,unsigned char y,const VRAM_PTR_TYPE *map);
+	extern void DrawMapRLE(unsigned char x,unsigned char y,const VRAM_PTR_TYPE *map);
 	extern void Print(int x,int y,const char *string);
 	extern void PrintRam(int x,int y,unsigned char *string);
 	extern void PrintBinaryByte(char x,char y,unsigned char byte);
@@ -81,7 +82,8 @@
 	extern void ClearVsyncFlag(void);
 	extern   u8 GetVsyncFlag(void);
 	extern void ClearVsyncCounter();
-	extern u16	GetVsyncCounter();	
+	extern u16	GetVsyncCounter();
+        extern void SetVsyncCounter(u16 count);
 
 	extern void SetRenderingParameters(u8 firstScanlineToRender, u8 verticalTilesToRender);
 
@@ -120,6 +122,19 @@
 	extern void SetSongSpeed(u8 speed);
 	extern	 u8 GetSongSpeed();
 	extern bool IsSongPlaying();
+
+	#ifndef NO_PC_TREMOLO
+		#define	NO_PC_TREMOLO	0
+	#endif
+	#ifndef NO_PC_SLIDE
+		#define NO_PC_SLIDE	0
+	#endif
+	#ifndef NO_PC_LOOP
+		#define NO_PC_LOOP	0
+	#endif
+	#ifndef NO_CHAN_EXPRESSION
+		#define NO_CHAN_EXPRESSION	0
+	#endif
 
 	/*
 	 * Controllers functions
@@ -161,10 +176,12 @@
 	extern u8 UartUnreadCount();
 	extern s16 UartReadChar();
 	extern s8 UartSendChar(u8 data);		
+	extern bool IsUartRxBufferEmpty();
 	extern bool IsUartTxBufferEmpty();
 	extern bool IsUartTxBufferFull();
 	extern void InitUartTxBuffer();
 	extern void InitUartRxBuffer();
+	extern void UartPutInRxBuffer(u8 ch);
 
 	/*
 	 * Misc functions
@@ -185,6 +202,7 @@
 	extern u16  GetTrueRandomSeed(); 		//uses the entropy generator to generate a seed. Needs -DTRUE_RANDOM_GEN == 1	
 	extern u16 GetPrngNumber(u16);			//non-zero values seeds the LFSR generator (pseudo-random generator)
 	
+	extern u32 GetFuses();					//read the fuses in the format (MSB) Extended:High:Low (LSB)
 
 	//Debug
 	extern void debug_clear();
@@ -197,6 +215,13 @@
 	extern void debug_long_hex(u32 i);
 	extern void debug_long(unsigned long val);
 	extern void debug_crlf();
+
+	// Used to output debugging data in the CUzebox HUD.
+	// Example usage:
+	//	*debug_port1 = array[0].item1;
+	//	*debug_port2 = 42;
+	extern u8 volatile * const debug_port1; //= (unsigned char *) 0x39;
+	extern u8 volatile * const debug_port2; //= (unsigned char *) 0x3A;
 
 	/*
 	 * Deprecated functions

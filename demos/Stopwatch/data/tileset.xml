@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<gfx-xform version="1">
+	<input file="../data/tileset.png" type="png" tile-width="8" tile-height="8" />
+	<output file="../data/tileset.inc">
+		<tiles var-name="tileset" />
+		<maps pointers-size="8">
+
+			<map var-name="blank" left="0" top="1" width="1" height="1" />
+
+			<map var-name="n0" left="0" top="4" width="4" height="5" />
+			<map var-name="n1" left="4" top="4" width="4" height="5" />
+			<map var-name="n2" left="8" top="4" width="4" height="5" />
+			<map var-name="n3" left="12" top="4" width="4" height="5" />
+			<map var-name="n4" left="16" top="4" width="4" height="5" />
+			<map var-name="n5" left="20" top="4" width="4" height="5" />
+			<map var-name="n6" left="24" top="4" width="4" height="5" />
+			<map var-name="n7" left="0" top="9" width="4" height="5" />
+			<map var-name="n8" left="4" top="9" width="4" height="5" />
+			<map var-name="n9" left="8" top="9" width="4" height="5" />
+		</maps>
+	</output>
+</gfx-xform>

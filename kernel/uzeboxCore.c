@@ -61,6 +61,11 @@ extern unsigned char sound_enabled;
 u8 joypadsConnectionStatus;
 //u16 prng_state=0;
 
+#ifndef NO_EEPROM_FORMAT
+	#define NO_EEPROM_FORMAT 0
+#endif
+
+#if (NO_EEPROM_FORMAT == 0)
 const u8 eeprom_format_table[] PROGMEM ={(u8)EEPROM_SIGNATURE,		//(u16)
 								   (u8)(EEPROM_SIGNATURE>>8),	//
 								   EEPROM_HEADER_VER,			//(u8)				
@@ -77,12 +82,15 @@ const u8 eeprom_format_table[] PROGMEM ={(u8)EEPROM_SIGNATURE,		//(u16)
 								   0,0,0,0,0,0,0,0,0 			//(u8[9])reserved
 								   };
 
-
+#endif
 
 extern void wdt_randomize(void);
 
 void wdt_init(void) __attribute__((naked)) __attribute__((section(".init7"), used));
 void Initialize(void) __attribute__((naked)) __attribute__((section(".init8"), used));
+
+u8 volatile * const debug_port1 = (unsigned char *) 0x39;
+u8 volatile * const debug_port2 = (unsigned char *) 0x3A;
 
 void wdt_init(void)
 {
@@ -182,9 +190,9 @@ void Initialize(void){
 		ptr=(u8*)(val&0xff);
 		*ptr=val>>8;
 	}
-
+#if (NO_EEPROM_FORMAT == 0)
 	if(!isEepromFormatted()) FormatEeprom();
-
+#endif
 	//InitSoundPort(); //ramp-up sound to avoid click
 
 	#if SOUND_MIXER == MIXER_TYPE_VSYNC
@@ -206,7 +214,7 @@ void Initialize(void){
 		tr4_params=0b00000001; //15 bits no divider (1)
 	#endif
 
-	#if UART == 1
+	#if (UART > 0)
 		InitUartRxBuffer();
 		InitUartTxBuffer();
 	#endif
@@ -316,7 +324,7 @@ void ReadButtons(){
 }
 
 /**
- * Initiates teh buttons reading and detect if joypads are connected.
+ * Initiates the buttons reading and detect if joypads are connected.
  * When no device are plugged, the internal AVR pullup will drive the data lines high
  * otherwise the controller's shift register will drive the data lines low after 
  * completing a transfer. (The shift register's serial input pin is tied to ground)
@@ -343,6 +351,7 @@ void ReadControllers(){
 
 #if SNES_MOUSE == 1
 
+//TODO: Fix potential timing issues with the Hyperkin SNES MOUSE. See: http://uzebox.org/forums/viewtopic.php?f=4&t=11101
 
 //read mouse bits 16 to 31
 //spec requires a 2.5ms delay between the two 16bits chunks
@@ -382,12 +391,12 @@ void ReadMouseExtendedData(){
 
 
 /*
- This method activates teh code to read the mouse. 
+ This method activates the code to read the mouse. 
  Currently reading the mouse takes a much a 2.5 scanlines.
 */
 unsigned char playDevice=0,playPort=0,mouseSpriteIndex,mouseWidth,mouseHeight;
 unsigned int actionButton;
-int mx=0,my=0;
+static int mx=0,my=0;
 
 char EnableSnesMouse(unsigned char spriteIndex,const char *spriteMap){
 	snesMouseEnabled=true;
@@ -602,7 +611,7 @@ unsigned char DetectControllers(){
 	
 // Format eeprom, wiping all data to zero
 void FormatEeprom(void) {
-
+#if (NO_EEPROM_FORMAT == 0)
    // Set sig. so we don't format next time
    for (u8 i = 0; i < sizeof(eeprom_format_table); i++) {
 	 WriteEeprom(i,pgm_read_byte(&eeprom_format_table[i]));
@@ -613,11 +622,12 @@ void FormatEeprom(void) {
 	  WriteEeprom(i,(u8)EEPROM_FREE_BLOCK);
 	  WriteEeprom(i+1,(u8)(EEPROM_FREE_BLOCK>>8));
    }
-   
+#endif
 }
 
 // Format eeprom, saving data specified in ids
 void FormatEeprom2(u16 *ids, u8 count) {
+#if (NO_EEPROM_FORMAT == 0)
    u8 j;
    u16 id;
 
@@ -640,14 +650,18 @@ void FormatEeprom2(u16 *ids, u8 count) {
 		 WriteEeprom(i*EEPROM_BLOCK_SIZE+1,(u8)(EEPROM_FREE_BLOCK>>8));
 	  }
    }
+#endif
 }
 	
 //returns true if the EEPROM has been setup to work with the kernel.
+#if (NO_EEPROM_FORMAT == 0)
 bool isEepromFormatted(){
+
 	unsigned id;
 	id=ReadEeprom(0)+(ReadEeprom(1)<<8);
 	return (id==EEPROM_SIGNATURE);
 }
+#endif
 
 /*
  * Reads the power button status. 
@@ -748,7 +762,7 @@ char EepromBlockExists(unsigned int blockId, u16* eepromAddr, u8* nextFreeBlockI
 }
 
 
-#if UART == 1
+#if (UART > 0)
 	/*
 	 * UART RX/TX buffer functions
 	 */
@@ -756,6 +770,13 @@ char EepromBlockExists(unsigned int blockId, u16* eepromAddr, u8* nextFreeBlockI
 	volatile u8 uart_rx_tail;
 	volatile u8 uart_rx_head;
 	volatile u8 uart_rx_buf[UART_RX_BUFFER_SIZE];
+
+
+	void UartPutInRxBuffer(u8 ch){
+		uart_rx_buf[uart_rx_head]=ch;
+		uart_rx_head++;
+		uart_rx_head&=(UART_RX_BUFFER_SIZE-1);
+	}
 
 	//obsolete
 	void UartGoBack(u8 count){
@@ -993,8 +1014,7 @@ void debug_str_p(const char* data){
 	}
 }
 
-void debug_str_r(char* data,u8 size, bool hex)
-{
+void debug_str_r(char* data,u8 size, bool hex){
 	for(u8 i=0;i<size;i++){
 		if(hex){
 			debug_hex(data[i]);	

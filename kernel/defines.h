@@ -370,44 +370,48 @@
 
 	//Joypad standard buttons mappings.
 	//Applies to both NES & SNES gamepads.
-	#define TYPE_SNES 0
-	#define TYPE_NES 1
+	#define TYPE_SNES	0
+	#define TYPE_NES	1
 
 	#if JOYSTICK == TYPE_SNES
-		#define BTN_SR	   2048
-		#define BTN_SL	   1024
-		#define BTN_X	   512
-		#define BTN_A	   256
-		#define BTN_RIGHT  128
-		#define BTN_LEFT   64
-		#define BTN_DOWN   32
-		#define BTN_UP     16
-		#define BTN_START  8
-		#define BTN_SELECT 4
-		#define BTN_Y      2
-		#define BTN_B      1
+		#define BTN_SR		2048
+		#define BTN_SL		1024
+		#define BTN_X		512
+		#define BTN_A		256
+		#define BTN_RIGHT	128
+		#define BTN_LEFT	64
+		#define BTN_DOWN	32
+		#define BTN_UP		16
+		#define BTN_START	8
+		#define BTN_SELECT	4
+		#define BTN_Y		2
+		#define BTN_B		1
 	#elif JOYSTICK == TYPE_NES
-		#define BTN_SR	   2048 //unused
-		#define BTN_SL	   1024 //unused		
-		#define BTN_X	   512 //unused
-		#define BTN_Y      256 //unused
+		#define BTN_SR		2048 //unused
+		#define BTN_SL		1024 //unused
+		#define BTN_X		512 //unused
+		#define BTN_Y		256 //unused
 
-		#define BTN_RIGHT  128
-		#define BTN_LEFT   64
-		#define BTN_DOWN   32
-		#define BTN_UP     16
-		#define BTN_START  8
-		#define BTN_SELECT 4
-		#define BTN_B      2
-		#define BTN_A      1
-	#endif 
+		#define BTN_RIGHT	128
+		#define BTN_LEFT	64
+		#define BTN_DOWN	32
+		#define BTN_UP		16
+		#define BTN_START	8
+		#define BTN_SELECT	4
+		#define BTN_B		2
+		#define BTN_A		1
+	#endif
 
-	#define BTN_MOUSE_LEFT 512
-	#define BTN_MOUSE_RIGHT 256
+	#define BTN_MOUSE_LEFT	512
+	#define BTN_MOUSE_RIGHT	256
+	#define MOUSE_SIGNATURE	32768
 
-	#define MOUSE_SENSITIVITY_LOW    0b00
-	#define MOUSE_SENSITIVITY_MEDIUM 0b10
-	#define MOUSE_SENSITIVITY_HIGH   0b01
+	#define MOUSE_SENSITIVITY_LOW		0b00//Hyperkin only support hardware sensitivity(button)
+	#define MOUSE_SENSITIVITY_MEDIUM	0b10//probably these should not be used for compatibility
+	#define MOUSE_SENSITIVITY_HIGH		0b01
+
+	#define LIGHTGUN_TRIGGER	12
+	#define LIGHTGUN_SENSE		13
 
 	
 	//Screen sections flags
@@ -441,18 +445,21 @@
 
 
 	#if SOUND_MIXER == MIXER_TYPE_INLINE
-		#define WAVE_CHANNELS 3
-		#define NOISE_CHANNELS 1
-		#define MIXER_CHAN4_TYPE 0
-		#define CHANNEL_STRUCT_SIZE 6
+		#define WAVE_CHANNELS		3
+		#define NOISE_CHANNELS		1
+		#define MIXER_CHAN4_TYPE	0
+		#define CHANNEL_STRUCT_SIZE	6
 
-		#if SOUND_CHANNEL_5_ENABLE==1
+		#if (SOUND_CHANNEL_5_ENABLE > 0)
 			#define PCM_CHANNELS 1
 			#define CHANNELS WAVE_CHANNELS+NOISE_CHANNELS+PCM_CHANNELS
 			
 			#if UART == 1
 				#define AUDIO_OUT_HSYNC_CYCLES (232)
 				#define AUDIO_OUT_VSYNC_CYCLES (232)
+			#elif UART == 2
+				#define AUDIO_OUT_HSYNC_CYCLES (217)
+				#define AUDIO_OUT_VSYNC_CYCLES (217)
 			#else
 				#define AUDIO_OUT_HSYNC_CYCLES (189)
 				#define AUDIO_OUT_VSYNC_CYCLES (189)
@@ -464,6 +471,9 @@
 			#if UART == 1
 				#define AUDIO_OUT_HSYNC_CYCLES (187)
 				#define AUDIO_OUT_VSYNC_CYCLES (187)
+			#elif UART == 2
+				#define AUDIO_OUT_HSYNC_CYCLES (172)
+				#define AUDIO_OUT_VSYNC_CYCLES (172)
 			#else
 				#define AUDIO_OUT_HSYNC_CYCLES (144)
 				#define AUDIO_OUT_VSYNC_CYCLES (144)
@@ -587,16 +597,15 @@
 		#include "videoMode748/videoMode74.def.h"
 	#elif VIDEO_MODE == 0
 		//custom user defined video mode
-		#include QUOTE(VIDEO_MODE_PATH/videoMode.def.h)
+		#include QUOTE(VIDEO_MODE_PATH/videoMode.def.h) 
 	#else
 		#error Invalid video mode defined with VIDEO_MODE
 	#endif
 
 	#ifdef HSYNC_USABLE_CYCLES 
 		#if HSYNC_USABLE_CYCLES - AUDIO_OUT_HSYNC_CYCLES <0
-			#error There is not enough CPU cycles to support the build options. Disable the UART (-DUART=0), audio channel 5 (-DSOUND_CHANNEL_5_ENABLE=0) or the inline mixer (-DSOUND_MIXER=0).
+			#error There is not enough CPU cycles to support the build options. Try half-duplex UART(-DUART=2), else disable one of: UART(-DUART=0), or audio channel 5(-DSOUND_CHANNEL_5_ENABLE=0), or the inline mixer(-DSOUND_MIXER=0).
 		#endif 
 	#endif
 
 #endif
-

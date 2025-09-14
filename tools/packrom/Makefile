@@ -75,7 +75,37 @@ RM := rm -rf
 MTOOLS = 
 endif
 
-## Mac OS #############################
+## FreeBSD ###########################
+ifeq ($(UNAME),FreeBSD)
+OS := LINUX
+PLATFORM := Unix
+CC := g++
+MKDIR := mkdir -p
+RM := rm -rf
+MTOOLS = 
+endif
+
+## NetBSD ############################
+ifeq ($(UNAME),NetBSD)
+OS := LINUX
+PLATFORM := Unix
+CC := g++
+MKDIR := mkdir -p
+RM := rm -rf
+MTOOLS =
+endif
+
+## Haiku #############################
+ifeq ($(UNAME),Haiku)
+OS := LINUX
+PLATFORM := Unix
+CC := g++
+MKDIR := mkdir -p
+RM := rm -rf
+MTOOLS =
+endif
+
+## Mac OS ############################
 ifeq ($(UNAME),Darwin)
 OS := MACOSX
 PLATFORM := Unix

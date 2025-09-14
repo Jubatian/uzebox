@@ -90,6 +90,7 @@
 .global IsRunningInEmulator
 .global GetVsyncCounter
 .global ClearVsyncCounter
+.global SetVsyncCounter
 
 ;Public variables
 .global sync_pulse
@@ -553,6 +554,18 @@ ClearVsyncCounter:
 	sts vsync_counter+1,r1
 	ret
 
+;************************************
+; Set the vsync counter.
+;
+; C-callable
+; r25:r24=(unsigned int)count
+;************************************
+.section .text.SetVsyncCounter
+SetVsyncCounter:
+        sts vsync_counter,r24
+        sts vsync_counter+1,r25
+        ret
+
 
 ;*****************************
 ; Return joypad 1 or 2 buttons status
@@ -789,7 +802,46 @@ internal_spi_byte:
 	in r24,_SFR_IO_ADDR(SPDR) ;read next pixel
 	ret
 
+;****************************
+; Read the AVR MCU fuses
+; C callable
+;****************************
+.global GetFuses
+.section .text.GetFuses
+GetFuses:
+	;read low fuses byte
+	clr zl
+	clr zh
+	in r22,_SFR_IO_ADDR(SPMCSR)
+	ori r22,(1 << BLBSET) | (1 << SPMEN)
+	cli
+	out _SFR_IO_ADDR(SPMCSR),r22
+	lpm r22,Z
+	sei
 
+	;read hi fuses byte
+	ldi zl,3
+	clr zh
+	in r23,_SFR_IO_ADDR(SPMCSR)
+	ori r23,(1 << BLBSET) | (1 << SPMEN)
+	cli
+	out _SFR_IO_ADDR(SPMCSR),r23
+	lpm r23,Z
+	sei
+
+	;read extended fuses byte
+	ldi zl,2
+	clr zh
+	in r24,_SFR_IO_ADDR(SPMCSR)
+	ori r24,(1 << BLBSET) | (1 << SPMEN)
+	cli
+	out _SFR_IO_ADDR(SPMCSR),r24
+	lpm r24,Z
+	sei
+
+	clr r25
+
+	ret
 
 #if TRUE_RANDOM_GEN == 1
 	;****************************

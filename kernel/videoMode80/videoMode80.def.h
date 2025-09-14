@@ -62,6 +62,10 @@
 	#define FRAME_LINES (SCREEN_TILES_V * TILE_HEIGHT)
 #endif
 
+#ifndef FONT_TILE_INDEX
+	#define FONT_TILE_INDEX 0x20
+#endif
+
 /* VRAM characteristics */
 
 #define VRAM_SIZE (VRAM_TILES_H * VRAM_TILES_V)

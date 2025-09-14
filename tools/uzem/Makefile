@@ -146,7 +146,41 @@ RM := rm -rf
 MTOOLS = 
 endif
 
-## Mac OS #############################
+## FreeBSD ###########################
+ifeq ($(UNAME),FreeBSD)
+OS := LINUX
+PLATFORM := Unix
+ifeq ($(EMSCRIPTEN_BUILD),1)
+    SDL_FLAGS :=
+    CC := emcc
+else
+    SDL_FLAGS := $(shell sdl2-config --cflags)
+    LDFLAGS += $(shell sdl2-config --libs)
+    CC := g++
+endif
+MKDIR := mkdir -p
+RM := rm -rf
+MTOOLS = 
+endif
+
+## NetBSD ############################
+ifeq ($(UNAME),NetBSD)
+OS := LINUX
+PLATFORM := Unix
+ifeq ($(EMSCRIPTEN_BUILD),1)
+    SDL_FLAGS :=
+    CC := emcc
+else
+    SDL_FLAGS := $(shell sdl2-config --cflags) -I/usr/pkg/include
+    LDFLAGS += $(shell sdl2-config --libs)
+    CC := g++
+endif
+MKDIR := mkdir -p
+RM := rm -rf
+MTOOLS =
+endif
+
+## Mac OS ############################
 ifeq ($(UNAME),Darwin)
 OS := MACOSX
 PLATFORM := Unix
@@ -187,27 +221,26 @@ ifneq (,$(findstring MINGW,$(UNAME)))
 PLATFORM := Windows
 OS_EXTENSION := .exe
 
-# First check in C:/SDL2
-SDL_BASE_DIR := C:/SDL2
-SDL_DIR_ENTRIES = $(wildcard C:/SDL2/*)
-ifeq ($(findstring include,$(SDL_DIR_ENTRIES)),include)
-    ifeq ($(findstring bin,$(SDL_DIR_ENTRIES)),bin)
-        SDL_FLAGS = -I$(SDL_BASE_DIR)/include/SDL2 -L$(SDL_BASE_DIR)/lib
-        SDL_DLL_FROM = $(SDL_BASE_DIR)/bin/SDL2.dll
-    endif
+# First check if we are running in a MSYS2 / ucrt64 environment
+SDL_BASE_DIR := /ucrt64
+SDL_DIR_ENTRIES = $(wildcard $(SDL_BASE_DIR)/include/*)
+ifeq ($(findstring SDL2,$(SDL_DIR_ENTRIES)),SDL2)
+    SDL_FLAGS    = -I$(SDL_BASE_DIR)/include/SDL2 -L$(SDL_BASE_DIR)/lib
+    SDL_DLL_FROM = $(SDL_BASE_DIR)/bin/SDL2.dll
 endif
-# Didn't find ?
+
+# Didn't find? Then check in C:/SDL2...
 ifeq ($(SDL_FLAGS),)
-# Then check in C:\MinGW
-ifneq ($(SDL_DIR_ENTRIES)),)
-    ifneq ($(wildcard C:/MinGW/include/SDL2/*)),)
-        ifeq ($(findstring SDL2.dll,$(wildcard C:/MinGW/lib/*)),SDL2.dll)
-			SDL_FLAGS = -IC:\MinGW\include\SDL2 
-            SDL_DLL_FROM = C:\MinGW\bin\SDL2.dll
+    SDL_BASE_DIR := C:/SDL2
+    SDL_DIR_ENTRIES = $(wildcard C:/SDL2/*)
+    ifeq ($(findstring include,$(SDL_DIR_ENTRIES)),include)
+        ifeq ($(findstring bin,$(SDL_DIR_ENTRIES)),bin)
+            SDL_FLAGS = -I$(SDL_BASE_DIR)/include/SDL2 -L$(SDL_BASE_DIR)/lib
+            SDL_DLL_FROM = $(SDL_BASE_DIR)/bin/SDL2.dll
         endif
     endif
 endif
-endif
+
 #If didn't find SDL...
 ifeq ($(SDL_FLAGS),)
     $(error The SDL library not found. Make sure you have it in C:\SDL2)
